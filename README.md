@@ -74,6 +74,19 @@ private repository of your own instead, link it:
 [docs/CUSTOMIZING.md](docs/CUSTOMIZING.md) explains which rules must stay
 resident and how to add standards of your own.
 
+## Updating
+
+```
+/plugin update devagent-standards
+/plugin update delivery
+```
+
+then run `./install.sh` again. A plugin update moves it to a new folder (the
+path carries the version), and the research permission rule names the exact
+path, so the script only runs without a prompt once the rule is rewritten.
+`./install.sh --check` tells you if it is out of date. To update the installer,
+templates and tests themselves, `git pull` in your clone.
+
 ## Your first feature
 
 ```

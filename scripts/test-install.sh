@@ -107,6 +107,15 @@ HOME="$H" "$REPO/install.sh" >/dev/null 2>&1
 check "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["env"]["KEEP"])' "$H/.claude/settings.json")" "1" "other settings are preserved"
 check "$(rules "$H" | grep -cxF 'Bash(git status)')" "1" "other allow rules are preserved"
 check "$(rules "$H" | grep -c '/old/place/')" "0" "a stale rule for an old plugin path is replaced"
+
+# A plugin update moves the cache folder (it carries the version). The old
+# versioned rule must be replaced, not left behind.
+H="$(sandbox)"; mkdir -p "$H/.claude"
+printf '%s' '{"permissions":{"allow":["Bash(git status)","Bash(/home/u/.claude/plugins/cache/devagent/delivery/0.9.0/scripts/web-search:*)","Bash(/home/u/other-tool/scripts/web-search:*)"]}}' > "$H/.claude/settings.json"
+HOME="$H" "$REPO/install.sh" >/dev/null 2>&1
+check "$(rules "$H" | grep -c 'delivery/0.9.0')" "0" "an old versioned cache-path rule is replaced after a plugin update"
+check "$(rules "$H" | grep -c 'other-tool')" "1" "a web-search rule for some other tool is left alone"
+check "$(rules "$H" | grep -c 'delivery/scripts/web-search\|delivery/[0-9.]*/scripts/web-search')" "1" "exactly one rule for this plugin remains"
 check "$(ls "$H/.claude/" | grep -c 'settings.json.bak-')" "1" "an edited settings.json is backed up first"
 
 H="$(sandbox)"; mkdir -p "$H/.claude"; printf '{not json' > "$H/.claude/settings.json"

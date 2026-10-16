@@ -73,7 +73,9 @@ path, root, action = os.environ["SETTINGS"], os.environ["ROOT"], os.environ["ACT
 if not root.startswith("/") or re.search(r"[\s*?()\[\]{}'\"\\]", root):
     print(f"refused: plugin path is not a plain absolute path: {root!r}"); sys.exit(2)
 rule = f"Bash({root}/scripts/web-search:*)"
-stale = re.compile(r"^Bash\(.*/delivery/scripts/web-search:\*\)$")
+# An older rule for this script: the repository layout (.../delivery/scripts/...)
+# or the plugin-cache layout, which carries the version (.../delivery/1.0.0/scripts/...).
+stale = re.compile(r"^Bash\(/[^()*?\s]*/delivery(?:/[0-9][^/()*?\s]*)?/scripts/web-search:\*\)$")
 try:
     cfg = json.load(open(path)) if os.path.exists(path) else {}
 except (OSError, ValueError) as e:
