@@ -19,7 +19,17 @@
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REC="$REPO/.smoke/sessions.json"
-SCRIPTS="$REPO/plugins/delivery/scripts"
+# Where Claude Code actually loads the delivery plugin from: the checkout for a
+# local install, the plugin cache for the GitHub-URL install the README
+# recommends. The researcher's permission rule must name THAT path.
+PLUGIN_ROOT="$(claude plugin list --json 2>/dev/null | python3 -c 'import json,sys
+try: ps=json.load(sys.stdin)
+except Exception: ps=[]
+for p in ps if isinstance(ps,list) else []:
+    if p.get("id")=="delivery@devagent":
+        print(p.get("readFromFolder") or p.get("installPath") or ""); break' 2>/dev/null || true)"
+PLUGIN_ROOT="${PLUGIN_ROOT:-$REPO/plugins/delivery}"
+SCRIPTS="$PLUGIN_ROOT/scripts"
 
 if [ "${1:-}" = "--record" ]; then
   T="$(mktemp -d /tmp/devagent-smoke.XXXXXX)"; trap 'rm -rf "$T"' EXIT
@@ -115,7 +125,7 @@ for s in STEPS:
 # 3. The allow rule the researcher depends on is installed, exact path only.
 cfg = json.loads((Path.home() / ".claude" / "settings.json").read_text())
 allow = (cfg.get("permissions") or {}).get("allow") or []
-rule = f"Bash({REPO}/plugins/delivery/scripts/web-search:*)"
+rule = f"Bash({os.environ['SCRIPTS']}/web-search:*)"
 check("settings.json carries the exact-path web-search rule", rule in allow, [a for a in allow if "web-search" in a])
 check("no wildcard web-search rule", not [a for a in allow if "web-search" in a and "*" in a.split(":*)")[0]])
 
