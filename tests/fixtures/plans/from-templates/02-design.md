@@ -64,7 +64,9 @@ Sample text for test strategy
 ## 12. Open decisions
 <!-- Questions only the operator or customer can answer. Each gets a D-n; none may remain once step 05 exists. -->
 
-- D-1: Sample text for decision needed
+| ID | Decision needed | Status |
+|---|---|---|
+| D-1 | Sample text for decision needed | needs-decision |
 
 ## Change log
 <!-- One row per change after the first draft. Source is one of: operator, research A-nn, research X-nn, R-nn, render check, T-nn. -->

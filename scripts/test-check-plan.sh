@@ -104,6 +104,18 @@ if [ "$RC" -eq 0 ] && [ "$(printf %s "$OUT" | grep -cvE '^checked [0-9]+ documen
 # T-07: a plan folder generated purely from the templates must pass as written.
 check tests/fixtures/plans/from-templates
 [ "$RC" -eq 0 ] && printf %s "$OUT" | grep -qE '^checked 5 documents' && ok "plan generated from the templates passes" || bad "from-templates fixture (exit $RC)" "$OUT"
+# A review finding that sends a question to the operator points at a D-n the
+# design template itself defines. The template once wrote decisions as bullets,
+# which the checker (rightly) does not read as definitions.
+FT="$WORK/from-templates-decision"; cp -R tests/fixtures/plans/from-templates "$FT"
+python3 - "$FT/04-review.md" <<'PYX'
+import re, sys
+p = sys.argv[1]; s = open(p).read()
+s = s.replace("- outcome: rejected — out of scope for this tier", "- outcome: needs-decision — D-1", 1)
+open(p, "w").write(s)
+PYX
+check "$FT"
+printf '%s\n' "$OUT" | grep -qF 'D-1, which is not defined' && bad "a template-written D-1 is not seen as defined by the checker" "$OUT" || ok "the design template's own D-1 is a definition the checker accepts"
 
 # ---- one bad-<rule> fixture per rule ----------------------------------------
 # fixture directory -> rule it must name (and the only rule it may name)
