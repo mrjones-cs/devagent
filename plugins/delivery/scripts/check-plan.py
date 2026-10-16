@@ -650,13 +650,18 @@ class Checker:
             repo = Path(top.stdout.strip()).resolve()
             if self.folder.resolve().parent != repo / "docs" / "plans":
                 return  # a plan folder copied elsewhere (a fixture): its task paths are not this repo's
-            log = subprocess.run(["git", "-C", str(repo), "log", "--format=%s", "--", *files],
+            # A task's commit is the one that touches its declared files OR its own
+            # evidence log. The log matters for a verification-only task (say, "run
+            # the suite on another interpreter"): it changes none of its files, but
+            # its commit always carries run-verify's evidence.
+            evidence = (self.folder.resolve() / "evidence" / f"{tid}.log").relative_to(repo)
+            log = subprocess.run(["git", "-C", str(repo), "log", "--format=%s", "--", *files, str(evidence)],
                                  capture_output=True, text=True, timeout=20)
         except (OSError, subprocess.TimeoutExpired):
             return
         count = sum(1 for s in log.stdout.splitlines() if re.match(rf"^{re.escape(tid)}(?!\d)\b", s))
         if count != 1:
-            self.fail("commit", doc.path, n, f"{tid} is [x] with {count} `{tid}` commits touching its files, expected 1")
+            self.fail("commit", doc.path, n, f"{tid} is [x] with {count} `{tid}` commits touching its files or its evidence log, expected 1")
 
 
 def on_allowlist(url: str) -> bool:

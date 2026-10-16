@@ -293,6 +293,26 @@ gcheck docs/plans/feat
 expect_git_only() { [ "$RC" -eq 1 ] && printf '%s' "$OUT" | grep -q -F '[commit]' && [ -z "$(printf '%s\n' "$OUT" | grep -v -F '[commit]' | grep -v '^$')" ]; }
 expect_git_only && ok "two T-01 commits fail" || bad "two commits (exit $RC)" "$OUT"
 
+# A verification-only task changes none of its declared files; its commit carries
+# only run-verify's evidence log. That is still its one commit.
+V="$WORK/gitrepo-verify"
+mkdir -p "$V/docs/plans" "$V/src"
+cp -R "$P/good" "$V/docs/plans/feat"
+mv "$V/docs/plans/feat/evidence/T-01.log" "$WORK/T-01.log.aside"   # T-01's own commit must introduce it
+vgit() { git -C "$V" -c user.name=fixture -c user.email=fixture@example.invalid \
+             -c commit.gpgsign=false -c core.hooksPath=/dev/null "$@" >/dev/null 2>&1; }
+vcheck() { OUT="$(cd "$V" && "${RUN[@]}" "$@" 2>&1)"; RC=$?; }
+vgit init -q; vgit add docs; vgit commit -q -m "Plan"
+echo b >"$V/src/b.py"; vgit add src/b.py; vgit commit -q -m "T-02: Build the other thing"
+mv "$WORK/T-01.log.aside" "$V/docs/plans/feat/evidence/T-01.log"
+vgit add docs/plans/feat/evidence/T-01.log; vgit commit -q -m "T-01: Prove it on the other interpreter"
+vcheck docs/plans/feat
+if printf '%s\n' "$OUT" | grep -F '[commit]' | grep -qF 'T-01'; then bad "a verification-only task (commit touching only its evidence log) was rejected" "$OUT"; else ok "a verification-only task's evidence-only commit counts as its commit"; fi
+printf 'more\n' >>"$V/docs/plans/feat/evidence/T-01.log"
+vgit add -A; vgit commit -q -m "T-01: and again"
+vcheck docs/plans/feat
+printf '%s\n' "$OUT" | grep -F '[commit]' | grep -qF 'T-01' && ok "a second T-01 commit touching its evidence log still fails" || bad "second evidence-log commit not caught" "$OUT"
+
 echo
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
