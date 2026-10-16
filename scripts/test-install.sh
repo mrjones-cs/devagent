@@ -13,17 +13,12 @@ set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PASS=0
 FAIL=0
-SANDBOXES=()
+# Every sandbox lives under ONE parent removed on exit. (A list appended to
+# inside "$(sandbox)" would be lost: command substitution runs in a subshell.)
+ROOT="$(mktemp -d /tmp/devagent-test.XXXXXX)"
+trap 'rm -rf "$ROOT"' EXIT
 
-cleanup() { for d in "${SANDBOXES[@]:-}"; do [ -n "$d" ] && rm -rf "$d"; done; }
-trap cleanup EXIT
-
-sandbox() {
-  local d
-  d="$(mktemp -d /tmp/devagent-test.XXXXXX)"
-  SANDBOXES+=("$d")
-  printf '%s' "$d"
-}
+sandbox() { mktemp -d "$ROOT/home.XXXXXX"; }
 
 ok()   { PASS=$((PASS+1)); printf '  \033[32mPASS\033[0m  %s\n' "$1"; }
 bad()  { FAIL=$((FAIL+1)); printf '  \033[31mFAIL\033[0m  %s\n' "$1"; }
