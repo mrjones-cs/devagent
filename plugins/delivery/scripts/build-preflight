@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""build-preflight <feature-dir> [--approve]
+Branch/base check, check-plan.py, verify-set approval, reconcile of [~] (DESIGN §4.4 Start).
+
+All logic lives in build-lib.py beside this file; see its docstring for the
+exit codes. INTERNAL TOOL of the delivery plugin.
+"""
+import importlib.util
+import sys
+from pathlib import Path
+
+_spec = importlib.util.spec_from_file_location(
+    "build_lib", Path(__file__).resolve().with_name("build-lib.py"))
+lib = sys.modules["build_lib"] = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(lib)
+
+if __name__ == "__main__":
+    sys.exit(lib.main("preflight", sys.argv[1:]))

@@ -1,0 +1,94 @@
+name: check
+
+# Every check in the repo, on every push and pull request. Each job is
+# seconds long; the slowest suite (build protocol) runs in about 15 s.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history: check-plan's commit rule counts each ticked task's
+          # `T-nn:` commit, and a shallow clone has none.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      # 1. Structure, cross-references, stubs and prose figures.
+      - name: check-skills.py
+        run: python3 scripts/check-skills.py
+
+      # 2. The checker's own negative tests. A validator that matches nothing
+      #    reports clean, which has happened here twice.
+      - name: check-skills.py negative tests
+        run: bash scripts/test-check-skills.sh
+
+      # 3. install.sh behaviour, against a throwaway HOME.
+      - name: install.sh syntax
+        run: bash -n install.sh
+
+      - name: install.sh behaviour tests
+        run: bash scripts/test-install.sh
+
+      # 4. The guard hooks: each rule fires, its look-alikes stay quiet, and
+      #    a broken guard fails open but loudly.
+      - name: guard hook tests
+        run: bash scripts/test-hooks.sh
+
+      # 5. The delivery plugin's scripts, each against throwaway repos and
+      #    fake runners. None of them reaches AWS or the network.
+      - name: check-plan tests
+        run: bash scripts/test-check-plan.sh
+
+      - name: example plan is valid
+        run: python3 plugins/delivery/scripts/check-plan.py examples/guard-report
+
+      - name: run-verify tests
+        run: bash scripts/test-run-verify.sh
+
+      - name: web-search tests (offline)
+        run: bash scripts/test-web-search.sh
+
+      - name: delivery hook tests
+        run: bash scripts/test-delivery-hooks.sh
+
+      - name: build protocol tests
+        run: |
+          git config --global user.email ci@example.invalid
+          git config --global user.name ci
+          bash scripts/test-build-protocol.sh
+
+      # guard-report enforces its own coverage floor, so this step needs uv
+      # for the pinned coverage tool; uv itself is pinned too.
+      - name: guard-report tests (coverage >= 80%)
+        run: |
+          python3 -m pip install --quiet 'uv==0.9.21'
+          COVER=1 bash scripts/test-guard-report.sh
+
+      # 6. Manifests, skills, agents and hooks as Claude Code itself reads
+      #    them. Exact pin (PINS.md claude-code). Its postinstall must run: it
+      #    fetches the native binary, and --ignore-scripts leaves a CLI that
+      #    cannot start. Accepted for this one exact-pinned first-party
+      #    package, on an ephemeral runner with contents: read.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: claude plugin validate --strict
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.300
+          claude plugin validate --strict plugins/devagent-standards
+          claude plugin validate --strict plugins/delivery

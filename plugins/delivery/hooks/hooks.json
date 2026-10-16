@@ -1,0 +1,28 @@
+{
+  "description": "delivery: a structure-only SessionStart briefing (IDs, statuses, counts; run /delivery:load for the full one) and a PostToolUse plan check that is silent unless an edit under docs/plans/ breaks the delivery-plan/1 grammar.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/briefing.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/briefing.py\" --post",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

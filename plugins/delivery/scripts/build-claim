@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""build-claim <feature-dir> <T-nn> [--retry] [--owner O] [--session S]
+Mark a task [~] and give it a fresh worktree on delivery/<feature>/T-nn from HEAD.
+
+All logic lives in build-lib.py beside this file; see its docstring for the
+exit codes. INTERNAL TOOL of the delivery plugin.
+"""
+import importlib.util
+import sys
+from pathlib import Path
+
+_spec = importlib.util.spec_from_file_location(
+    "build_lib", Path(__file__).resolve().with_name("build-lib.py"))
+lib = sys.modules["build_lib"] = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(lib)
+
+if __name__ == "__main__":
+    sys.exit(lib.main("claim", sys.argv[1:]))

@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""build-lock acquire|release|status|takeover <feature-dir> [--pid PID] [--session ID]
+Exclusive build lock in the repository's common .git directory (DESIGN §4.4 Start 1).
+
+All logic lives in build-lib.py beside this file; see its docstring for the
+exit codes. INTERNAL TOOL of the delivery plugin.
+"""
+import importlib.util
+import sys
+from pathlib import Path
+
+_spec = importlib.util.spec_from_file_location(
+    "build_lib", Path(__file__).resolve().with_name("build-lib.py"))
+lib = sys.modules["build_lib"] = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(lib)
+
+if __name__ == "__main__":
+    sys.exit(lib.main("lock", sys.argv[1:]))

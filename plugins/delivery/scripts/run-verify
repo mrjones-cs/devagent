@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+"""Run one task's verify command and write its evidence. INTERNAL TOOL.
+
+    run-verify <feature-dir> <T-nn> [--write]
+
+The model never types evidence (DESIGN §4.4). This script:
+
+  1. reads the task's `verify` and `timeout` from <feature-dir>/05-implementation.md;
+  2. refuses the command unless it is on the front matter's `verify_allowed`
+     list and contains no shell operator - it is never run by a shell;
+  3. runs it from the repository root with AWS and GitHub credentials removed
+     from the environment, killing it at the task's timeout;
+  4. writes the full output to <feature-dir>/evidence/T-nn.log;
+  5. parses a test count from the output - a runner that reports zero tests,
+     or reports no count at all, is a FAILURE, because a filter that matched
+     nothing proves nothing;
+  6. prints the evidence line, and with --write records it in the task block.
+
+It never ticks the task: build owns the plan status and the commit.
+
+Exit: the command's own exit code; 2 refused or unusable plan; 3 no test
+count / zero tests; 124 timed out.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import os
+import re
+import shlex
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+METACHARS = re.compile(r"[;|&$`><]")
+TIMEOUT_RE = re.compile(r"^(\d+)\s*([smh]?)$")
+DEFAULT_TIMEOUT_S = 600
+
+# A runner's own count of what it checked. First match wins; order matters
+# (a "0 passed" line must not be skipped in favour of a later number).
+COUNT_PATTERNS = [
+    re.compile(r"\b(\d+) passed\b"),                         # our scripts, pytest
+    re.compile(r"\b(\d+) rules fired correctly\b"),          # test-check-skills.sh
+    re.compile(r"\bRan (\d+) tests?\b"),                     # unittest
+    re.compile(r"\bTests:\s+(\d+) passed\b"),                # jest, vitest
+    re.compile(r"\bchecked (\d+) (?:skills|documents)\b"),   # check-skills, check-plan
+    re.compile(r"^✔ (Validation passed)", re.M),             # claude plugin validate: one check
+]
+
+STRIP_EXACT = {"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"}
+
+
+class Refused(Exception):
+    pass
+
+
+def parse_timeout(text: str) -> int:
+    m = TIMEOUT_RE.match((text or "").strip())
+    if not m:
+        return DEFAULT_TIMEOUT_S
+    n, unit = int(m.group(1)), m.group(2) or "s"
+    return n * {"s": 1, "m": 60, "h": 3600}[unit]
+
+
+def front_matter(text: str) -> tuple[list[str], str]:
+    """Return (verify_allowed, rest of document)."""
+    if not text.startswith("---\n"):
+        raise Refused("05-implementation.md has no front matter")
+    end = text.index("\n---", 4)
+    fm, rest = text[4:end], text[end + 4:]
+    allowed, in_list = [], False
+    for line in fm.splitlines():
+        if re.match(r"^verify_allowed:\s*$", line):
+            in_list = True
+            continue
+        if in_list:
+            m = re.match(r"^\s+-\s+(.*\S)\s*$", line)
+            if m:
+                allowed.append(m.group(1))
+                continue
+            in_list = False
+    return allowed, rest
+
+
+def task_block(text: str, tid: str) -> tuple[int, int, dict[str, str]]:
+    m = re.search(rf"^### {re.escape(tid)} \[.\] .*$", text, re.M)
+    if not m:
+        raise Refused(f"{tid} not found in 05-implementation.md")
+    nxt = re.search(r"^#{2,3} ", text[m.end():], re.M)
+    end = m.end() + (nxt.start() if nxt else len(text) - m.end())
+    fields = {}
+    for line in text[m.start():end].splitlines():
+        b = re.match(r"^- ([a-z][a-z _]*):\s*(.*)$", line)
+        if b:
+            fields[b.group(1)] = b.group(2)
+    return m.start(), end, fields
+
+
+def clean_env() -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith("AWS_") and k not in STRIP_EXACT}
+    # No profile, no SSO cache: the command cannot reach any AWS identity.
+    env["AWS_CONFIG_FILE"] = os.devnull
+    env["AWS_SHARED_CREDENTIALS_FILE"] = os.devnull
+    return env
+
+
+def scrub(text: str, root: Path) -> str:
+    """Make the evidence portable: the repository (or worktree) root becomes
+    `<repo>` and the home directory `~`, so a committed log never carries the
+    operator's username or machine layout into a handover (pilot T-17)."""
+    out = text.replace(str(root), "<repo>")
+    home = os.path.expanduser("~")
+    if home and home != "/":
+        out = re.sub(re.escape(home) + r"(?=/|\b)", "~", out)
+    return out
+
+
+def test_count(output: str) -> int | None:
+    for pat in COUNT_PATTERNS:
+        m = pat.search(output)
+        if m:
+            return 1 if m.group(1) == "Validation passed" else int(m.group(1))
+    return None
+
+
+def repo_root(start: Path) -> Path:
+    r = subprocess.run(["git", "-C", str(start), "rev-parse", "--show-toplevel"],
+                       capture_output=True, text=True, timeout=20)
+    if r.returncode != 0:
+        raise Refused(f"{start} is not inside a git repository")
+    return Path(r.stdout.strip())
+
+
+def run(feature: Path, tid: str, write: bool) -> int:
+    plan = feature / "05-implementation.md"
+    if not plan.is_file():
+        raise Refused(f"no {plan}")
+    text = plan.read_text()
+    allowed, _ = front_matter(text)
+    _, _, fields = task_block(text, tid)
+    cmd = fields.get("verify", "").strip()
+    m = re.fullmatch(r"`([^`]+)`", cmd)
+    if not m:
+        raise Refused(f"{tid} has no `verify` command in backticks")
+    cmd = m.group(1)
+    if METACHARS.search(cmd):
+        raise Refused(f"{tid} verify contains a shell operator; refused: {cmd}")
+    if cmd not in allowed:
+        raise Refused(f"{tid} verify is not on verify_allowed; refused: {cmd}")
+
+    root = repo_root(feature)
+    timeout = parse_timeout(fields.get("timeout", ""))
+    evidence_dir = feature / "evidence"
+    evidence_dir.mkdir(exist_ok=True)
+    log = evidence_dir / f"{tid}.log"
+
+    started = time.monotonic()
+    proc = subprocess.Popen(shlex.split(cmd), cwd=root, env=clean_env(),
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            text=True, start_new_session=True)
+    try:
+        out, _ = proc.communicate(timeout=timeout)
+        code = proc.returncode
+    except subprocess.TimeoutExpired:
+        os.killpg(proc.pid, signal.SIGKILL)
+        out, _ = proc.communicate()
+        out = (out or "") + f"\n[run-verify] killed after {timeout}s timeout\n"
+        code = 124
+    elapsed = time.monotonic() - started
+
+    header = f"$ {cmd}\n[run-verify] task {tid} · exit {code} · {elapsed:.1f}s\n\n"
+    log.write_text(scrub(header + (out or ""), root))
+    digest = hashlib.sha256(log.read_bytes()).hexdigest()
+    count = test_count(out or "")
+    sys.stdout.write(out or "")
+
+    if code != 0:
+        print(f"\n[run-verify] {tid}: exit {code} - no evidence written", file=sys.stderr)
+        return code
+    if not count:
+        print(f"\n[run-verify] {tid}: the command reported "
+              f"{'zero tests' if count == 0 else 'no test count'} - a check that "
+              f"examined nothing proves nothing; no evidence written", file=sys.stderr)
+        return 3
+
+    line = (f"run-verify · exit 0 · tests {count} · {elapsed:.1f}s · "
+            f"log evidence/{tid}.log sha256:{digest} · {time.strftime('%Y-%m-%d')}")
+    print(f"\n- evidence: {line}")
+    if write:
+        record(plan, tid, line)
+    return 0
+
+
+def record(plan: Path, tid: str, line: str) -> None:
+    text = plan.read_text()
+    start, end, _ = task_block(text, tid)
+    block = text[start:end]
+    if re.search(r"^- evidence: .*$", block, re.M):
+        block = re.sub(r"^- evidence: .*$", f"- evidence: {line}", block, count=1, flags=re.M)
+    else:
+        block = block.rstrip("\n") + f"\n- evidence: {line}\n\n"
+    plan.write_text(text[:start] + block + text[end:])
+
+
+def main(argv: list[str]) -> int:
+    args = [a for a in argv[1:] if a != "--write"]
+    if len(args) != 2 or not re.fullmatch(r"T-\d+", args[1]):
+        print(__doc__.strip().splitlines()[2], file=sys.stderr)
+        return 2
+    try:
+        return run(Path(args[0]).resolve(), args[1], "--write" in argv)
+    except Refused as e:
+        print(f"run-verify: {e}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

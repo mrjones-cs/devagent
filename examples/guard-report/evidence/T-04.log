@@ -1,0 +1,12 @@
+$ env COVER=1 bash scripts/test-guard-report.sh
+[run-verify] task T-04 · exit 0 · 20.7s
+
+  note: planted-module (-I) case skipped under COVER=1 - coverage run adds the script dir to sys.path
+  perf: 10000 records reported in 0.096 s wall time (limit 2 s)
+436 passed, 0 failed
+coverage of scripts/guard-report.py: line 98.8%  branch 97.9%  (floor 80%)
+Name                                                                                                                          Stmts   Miss Branch BrPart  Cover
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+<repo>/scripts/guard-report.py     329      4     96      2    99%
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                                                           329      4     96      2    99%

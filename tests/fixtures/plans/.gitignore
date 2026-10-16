@@ -1,0 +1,3 @@
+# The repository ignores *.log; fixture evidence logs are data the
+# checker hashes, so they must be committed.
+!*.log

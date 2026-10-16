@@ -1,0 +1,28 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "devagent",
+  "description": "DevAgent: guardrails, engineering standards and a delivery workflow for Claude Code.",
+  "owner": {
+    "name": "DevAgent contributors"
+  },
+  "plugins": [
+    {
+      "name": "devagent-standards",
+      "description": "Engineering standards as thirteen on-demand skills: auth, API, browser and LLM security; encryption; cloud infrastructure and cost; stack selection; observability; document artifacts; breach response; verification methods; engagement close-out; public release. Plus devagent-guard hooks enforcing the toolchain rules (deny or ask).",
+      "author": {
+        "name": "DevAgent contributors"
+      },
+      "category": "security",
+      "source": "./plugins/devagent-standards"
+    },
+    {
+      "name": "delivery",
+      "description": "A delivery workflow: load, brainstorm, design, research, spec-panel, workflow, build, plan and save, each writing a markdown record of one feature. Build executes the plan one task at a time and ticks a task only with recorded verification evidence.",
+      "author": {
+        "name": "DevAgent contributors"
+      },
+      "category": "productivity",
+      "source": "./plugins/delivery"
+    }
+  ]
+}

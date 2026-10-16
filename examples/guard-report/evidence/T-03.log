@@ -1,0 +1,4 @@
+$ bash scripts/test-guard-report.sh
+[run-verify] task T-03 · exit 0 · 5.6s
+
+428 passed, 0 failed

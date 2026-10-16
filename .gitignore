@@ -1,0 +1,73 @@
+# ---------------------------------------------------------------------------
+# Confidential: client brand names. A client's identity paired with what they
+# are building is itself confidential (CUSTOMER CONFIDENTIALITY). Keeping this
+# out of the repo is what makes the repo safe to clone onto any machine.
+# CLAUDE.md does NOT depend on it: every client name is constrained in every
+# exported artifact by default, so an absent or empty file weakens nothing.
+# ---------------------------------------------------------------------------
+global/clients.local.md
+
+# ---------------------------------------------------------------------------
+# Never commit, even by accident. These are copies of customer material or
+# machine-local state, not configuration.
+# ---------------------------------------------------------------------------
+settings.local.json
+**/settings.local.json
+*.local.json
+sessions/
+file-history/
+session-env/
+shell-snapshots/
+projects/
+memory/
+MEMORY.md
+NOTES.md
+*.log
+debug/
+
+# Secrets of any shape
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.keychain
+credentials*
+*_rsa
+*_ed25519
+.mcp.local.json
+
+# macOS / editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python venvs and caches from the PDF build
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Playwright MCP writes screenshots and page snapshots into the workspace
+# root. In a client repo those are images of client UIs: never commit them.
+.playwright-mcp/
+
+# Claude Code agent worktrees (builders run here; never commit them)
+.claude/worktrees/
+
+# Evidence logs written by run-verify are part of the delivery record: the
+# plan checker verifies their hashes, so they must be committed.
+!docs/plans/*/evidence/*.log
+!examples/*/evidence/*.log
+
+# Terraform: provider downloads, state (may contain sensitive values), local vars
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+*.tfvars
+crash.log
+
+# The install smoke test records live sessions here (machine-local paths)
+.smoke/

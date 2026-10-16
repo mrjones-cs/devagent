@@ -1,0 +1,39 @@
+# TEMPLATE - not the live file. Never committed with real names.
+
+`install.sh` reads this template and writes `clients.local.md` beside it,
+adding its own header; that generated file is what `install.sh` symlinks to
+`~/.claude/clients.local.md` for the resident CONTENT CONSTRAINTS import.
+**Everything above the `---` below stays here and is NOT copied** — an
+earlier version copied this whole file verbatim, producing a live file whose
+first line told the reader to copy it to its own path.
+
+Do not edit this template to add brands. Edit the generated
+`clients.local.md`, which is gitignored because a client's identity paired
+with what they are building is itself confidential (see CUSTOMER
+CONFIDENTIALITY) — keeping it out of the repo is what makes the repo safe to
+clone onto any machine, including one supplied by a client.
+
+**The list is OPTIONAL and adds nothing to the default posture.** Every
+client name is already constrained in every exported artifact, always, with
+no list consulted. An empty list is safe and is the intended default.
+
+Filling it in does one narrower job: it marks brands that must not appear
+**even when the user explicitly authorizes a name for a specific artifact**.
+That is the only exception the resident rule allows, and entries here
+withdraw it.
+
+---
+
+## Never, even on explicit authorization
+
+Brand names, trading names, product names, and signature branding that must
+never appear in a PDF, PPTX, DOCX, rendered image, or any other exported or
+shareable artifact — including titles, footers, chart labels, narrative
+text, embedded images, metadata, and filenames.
+
+- [BRAND NAME]
+- [BRAND NAME] variants, legal entities, and product/domain names
+
+Use instead: "our company", "the bank", "the engineering org", "the firm",
+or bracketed placeholders `[COMPANY]`, `[ORG]`, `[CLIENT]` — or leave the
+field blank for manual insertion after delivery.

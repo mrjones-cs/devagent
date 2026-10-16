@@ -1,0 +1,40 @@
+{
+  "description": "devagent-guard: deterministic backing for the resident toolchain rules (pipe-to-shell, disabled TLS, going public, unpinned installs, credential reads), a local audit log, and a session health check. Warn-only until MODE in guard.py is flipped.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Grep|Write|Edit|MultiEdit|NotebookEdit|WebFetch|mcp__playwright__browser_navigate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.py\" pre",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.py\" post",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.py\" session",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
