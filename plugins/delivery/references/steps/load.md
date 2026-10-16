@@ -44,7 +44,10 @@ file and line.
 5. **Git state** - current branch and whether it matches 05's `branch`;
    ahead/behind its upstream; uncommitted files; worktrees under
    `.claude/worktrees/`.
-6. **Plan validity** - run
+6. **Plan validity** - if `docs/plans/` does not exist, there is nothing to
+   check: report "no plans yet" and skip this step (a new project is not a
+   failure, and the checker deliberately exits 1 on a missing folder so that a
+   mistyped path in CI cannot pass). Otherwise run
    `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check-plan.py docs/plans/<feature>`
    for each plan (or `--all`) and include its findings verbatim.
 
@@ -63,8 +66,8 @@ not surprised: `calls_model: true` → `devagent-standards:llm-app-security`,
 
 ## Finish
 
-Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check-plan.py docs/plans/<feature>`
-(step 6 above) and report one briefing, every section headed `DATA:` - NOTES
+Run the plan check (step 6 above, skipped when there is no `docs/plans/`) and
+report one briefing, every section headed `DATA:` - NOTES
 current state, knowledge index, per-plan progress and next ready task,
 blockers, lock state, git state, and the `check-plan.py` output. End with the
 single next step you recommend (for example `/delivery:design <feature>`) and
