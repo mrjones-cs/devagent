@@ -40,6 +40,8 @@ discussion (see "Dependencies" below).
    [docs/DESIGN.md](docs/DESIGN.md) in the same pull request.
 6. **No organisation, client or personal data** in anything committed: names,
    account IDs, emails, internal hostnames, absolute paths with a username.
+   CI also scans every push (files, names and the whole history) for terms the
+   maintainers keep out of the repository, and fails the build if it finds one.
 
 ## Dependencies
 

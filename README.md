@@ -186,6 +186,7 @@ bash scripts/test-web-search.sh        # search client, offline
 bash scripts/test-delivery-hooks.sh    # briefing and plan-check hook
 bash scripts/test-build-protocol.sh    # build lock, scope check, integrate
 bash scripts/test-guard-report.sh      # audit report
+bash scripts/test-forbidden-terms.sh   # the scanner that keeps maintainers' private terms out of the repo
 ```
 
 Any test script takes `COVER=1` to report line and branch coverage (needs `uv`).
