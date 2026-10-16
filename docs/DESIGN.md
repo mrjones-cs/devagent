@@ -365,7 +365,7 @@ failure; `--hook` is silent on pass.
 - Grammar above: front-matter keys per step, `format` version, `status` vocabulary, ID patterns, table separators.
 - IDs unique; every reference resolves; `depends` acyclic.
 - Every `R-nn` has an outcome; every `applied → C-nn` exists in 02; no `needs-decision` once 05 exists.
-- Every `[x]` has `run-verify` evidence whose log file exists and matches its hash, with tests > 0 where the runner reports counts; exactly one `T-nn` commit per `[x]` (in a repo), counting a commit that touches the task's `files` or its own `evidence/T-nn.log`, so a verification-only task that changes no file still has its one commit.
+- Every `[x]` has `run-verify` evidence whose log file exists and matches its hash, with tests > 0 where the runner reports counts; exactly one `T-nn` commit per `[x]` (in a repo), counting a commit that touches the task's `files` or its own evidence log (`T-nn.log`), so a verification-only task that changes no file still has its one commit.
 - Every `verify` matches `verify_allowed` and contains no shell metacharacters `; | & $ \` > <`.
 - Every 🔄/⛔ source is on the allowlist; every recorded query is clear of the engagement deny-list.
 - Every `[!]` has a reason; every `[~]` has an owner.
