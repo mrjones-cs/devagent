@@ -186,7 +186,7 @@ t "stale skill count in a manifest description" "skill count reads" \
   "perl -0pi -e 's/thirteen on-demand skills/twelve on-demand skills/' .claude-plugin/marketplace.json"
 
 t "PINS.md disagreeing with the code" "the pin and the code disagree" \
-  "perl -0pi -e 's/\| delivery-plugin \| 1\.0\.0 \|/| delivery-plugin | 9.9.9 |/' plugins/delivery/PINS.md"
+  "perl -0pi -e 's/(\| delivery-plugin \| )[0-9][0-9.]*( \|)/\${1}9.9.9\${2}/' plugins/delivery/PINS.md"
 
 t "delivery manifest without its dependency" "dependencies" \
   "perl -0pi -e 's/\"dependencies\": \[\"devagent-standards\"\],//' plugins/delivery/.claude-plugin/plugin.json"

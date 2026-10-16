@@ -1,6 +1,6 @@
 {
   "name": "delivery",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A delivery workflow: load, brainstorm, design, research, spec-panel, workflow, build, plan and save, each writing a markdown record of one feature. Build executes the plan one task at a time and ticks a task only with recorded verification evidence.",
   "author": {
     "name": "DevAgent contributors"
