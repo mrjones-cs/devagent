@@ -363,6 +363,7 @@ Interface: `check-plan.py <feature-dir> | --all [--hook PATH]`. Exit 1 on any
 failure; `--hook` is silent on pass.
 
 - Grammar above: front-matter keys per step, `format` version, `status` vocabulary, ID patterns, table separators.
+- 01 has non-empty `## Data handled` and `## Client constraints` sections; `none stated` counts as an answer.
 - IDs unique; every reference resolves; `depends` acyclic.
 - Every `R-nn` has an outcome; every `applied → C-nn` exists in 02; no `needs-decision` once 05 exists.
 - Every `[x]` has `run-verify` evidence whose log file exists and matches its hash, with tests > 0 where the runner reports counts; exactly one `T-nn` commit per `[x]` (in a repo), counting a commit that touches the task's `files` or its own evidence log (`T-nn.log`), so a verification-only task that changes no file still has its one commit.

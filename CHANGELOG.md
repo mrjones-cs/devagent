@@ -16,6 +16,12 @@ Fixes from a prompt audit of every file the model reads.
   themselves instead of deferring to a bare "§3.4". `check-skills.py` now fails
   any section reference in a shipped plugin file that is not a parenthetical
   `(DESIGN §n)` beside a stated rule, with negative tests.
+- **Requirements template** has `## Data handled` and `## Client constraints`
+  sections. `brainstorm` always asked both; the template had nowhere to put
+  the answers, so every draft placed them differently. `check-plan.py` now
+  fails a 01 without either section, or with one left empty. **Existing
+  plans:** add both headings to each `01-requirements.md`; `none stated` is a
+  valid answer.
 - **Resident rules template:** the nine `IMPORTANT:` section openers and the
   "NEVER EVER" are gone. The template already warns that a label on every
   section flattens the two HIGHEST PRIORITY banners; every rule and reason is
