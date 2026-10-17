@@ -44,6 +44,7 @@ STEP_KEYS = {
     "04-review": ("classification",),
     "05-implementation": ("branch", "base", "verify_allowed"),
 }
+REQUIREMENTS_SECTIONS = ("Data handled", "Client constraints")
 
 # Hosts accepted as the source of a 🔄 (changed) or ⛔ (wrong) research row
 # (DESIGN §5.3). A host matches itself and its subdomains. A non-None value
@@ -312,6 +313,7 @@ class Checker:
             self.front_matter(doc)
             self.table_separators(doc)
         self.ids()
+        self.requirements()
         self.change_log()
         self.research()
         self.review()
@@ -442,6 +444,24 @@ class Checker:
                         if ident not in pool:
                             where = {"A": "03", "X": "03", "R": "04", "T": "05"}[ident[0]]
                             self.fail("dangling-ref", doc.path, n, f"source `{ident}` is not defined in {where}")
+
+    # -- 01 requirements ----------------------------------------------------
+
+    def requirements(self) -> None:
+        # brainstorm must answer both before design starts; `none stated` is an
+        # answer, a missing or empty section is the silent gap it forbids.
+        for doc in self.by_step("01-requirements"):
+            for title in REQUIREMENTS_SECTIONS:
+                found = sections(doc, re.compile(rf"^## {re.escape(title)}\s*$"))
+                if not found:
+                    self.fail("requirements-sections", doc.path, 1,
+                              f"no `## {title}` section - answer it, or write `none stated`")
+                    continue
+                n, _, block = found[0]
+                text = re.sub(r"<!--.*?-->", "", "\n".join(t for _, t in block), flags=re.S)
+                if not text.strip():
+                    self.fail("requirements-sections", doc.path, n,
+                              f"`## {title}` is empty - answer it, or write `none stated`")
 
     # -- 03 research --------------------------------------------------------
 

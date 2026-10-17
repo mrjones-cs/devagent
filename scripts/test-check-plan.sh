@@ -203,6 +203,18 @@ expect_rule "step does not match file name" front-matter tests/fixtures/plans/m
 mutate m 01-requirements.md "tier: M
 " ""
 expect_only "01 without tier" front-matter tests/fixtures/plans/m
+mutate m 01-requirements.md "## Data handled
+
+none stated
+" ""
+expect_only "01 without a Data handled section" requirements-sections tests/fixtures/plans/m
+mutate m 01-requirements.md "## Client constraints
+
+none stated
+" "## Client constraints
+<!-- left for later -->
+"
+expect_only "01 with an empty Client constraints section" requirements-sections tests/fixtures/plans/m
 mutate m 04-review.md "reads: 02-design.md, 03-research.md
 " ""
 expect_only "04 without reads" front-matter tests/fixtures/plans/m

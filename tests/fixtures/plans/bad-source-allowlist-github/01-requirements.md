@@ -18,3 +18,11 @@ A small feature used only to exercise `check-plan.py`.
 | Criterion | Meaning |
 |---|---|
 | AC-1 | the good fixture passes |
+
+## Data handled
+
+none stated
+
+## Client constraints
+
+none stated

@@ -24,17 +24,20 @@ which rules fire, how often, where, and what enforce mode would have done.
   one partition folder per engagement.
 - Existing codebase binds the stack (operator-stated): Python 3.11+, standard
   library only.
-- Data handled: tool-call metadata already redacted by the guard (commands,
-  file paths, rule names). Paths and engagement folder names can reveal which
-  client engagements exist, so the log and the report are
-  Confidential. Personal data: none beyond the operator username in
-  paths. Regulated data: none stated. Credentials: none - the log is
-  redacted. Client IP: none beyond what engagement names imply. Production
-  data: none.
-- Client constraints: none - internal tool (no SSO/IdP, cloud, region,
-  vendor list, compliance regime or contract clause applies).
 - AI-use position: the tool does not call a model, retrieve documents for a
   model, or give an agent tools.
+
+## Data handled
+Tool-call metadata already redacted by the guard (commands, file paths, rule
+names). Paths and engagement folder names can reveal which client engagements
+exist, so the log and the report are Confidential. Personal data: none beyond
+the operator username in paths. Regulated data: none stated. Credentials: none,
+because the log is redacted. Client IP: none beyond what engagement names
+imply. Production data: none.
+
+## Client constraints
+None - internal tool (no SSO/IdP, cloud, region, vendor list, compliance regime
+or contract clause applies).
 
 ## Functional requirements
 1. Read every `YYYY-MM.jsonl` file under the audit directory, across all
