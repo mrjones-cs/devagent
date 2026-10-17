@@ -191,6 +191,17 @@ t "PINS.md disagreeing with the code" "the pin and the code disagree" \
 t "delivery manifest without its dependency" "dependencies" \
   "perl -0pi -e 's/\"dependencies\": \[\"devagent-standards\"\],//' plugins/delivery/.claude-plugin/plugin.json"
 
+# Section references: DESIGN.md does not ship, so a shipped file may cite it
+# only as `(DESIGN §n)`. Both the bare form and the "per DESIGN" form must fire.
+t "bare section reference in a shipped agent" "section reference outside" \
+  "perl -0pi -e 's/\(DESIGN §3\.4\)\.\$/(§3.4)./m' plugins/delivery/agents/researcher.md"
+
+t "section reference used as the rule in a shipped step" "section reference outside" \
+  "printf '\nSet the tier per DESIGN §3.2.\n' >> plugins/delivery/references/steps/brainstorm.md"
+
+t "bare section reference in a standards skill" "section reference outside" \
+  "printf '\nSee §2 of the design.\n' >> plugins/devagent-standards/skills/encryption/SKILL.md"
+
 echo
 after="$(ck)"
 printf '%s' "$after" | grep -q '^clean$' \

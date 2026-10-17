@@ -24,6 +24,9 @@ Catches the failure modes that loading a skill successfully will NOT catch:
   * frontmatter that is missing, malformed, or whose name does not match its
     directory
   * a thin description - the description is the entire trigger mechanism
+  * a shipped plugin file that relies on a DESIGN section (`per DESIGN §3.2`,
+    a bare `§3.4`). docs/ does not ship with the plugins, so the reference
+    points at nothing at run time; `(DESIGN §n)` beside a stated rule is fine
   * a PROSE FIGURE that no longer matches reality - the skill count, the
     resident file's line and word count, and the derived token estimate are
     quoted in ~9 places across install.sh, README.md, build-pdf.py and
@@ -389,6 +392,23 @@ def check_figures(n_skills: int, res_lines: int, res_words: int,
 
 LENS_WHEN = {"always", "personal_data", "calls_model", "has_ui"}
 
+# The plugins install without docs/, so a shipped step or agent that defers to
+# "§3.4" points at nothing at run time: the requirements analyst set the tier
+# "per DESIGN §3.2" and never saw it. A shipped file states its rule itself and
+# may cite DESIGN only as a parenthetical maintainer pointer, `(DESIGN §n`.
+# `02 §n` points into the plan's own design file, which does ship.
+SECTION_REF = re.compile(r"(?<!\(DESIGN )(?<!02 )§")
+
+
+def check_section_refs() -> None:
+    for root in (PLUGIN, DELIVERY):
+        for f in sorted(root.rglob("*.md")) if root.is_dir() else []:
+            for n, line in enumerate(f.read_text().splitlines(), 1):
+                if SECTION_REF.search(line):
+                    fail(f"{f.relative_to(REPO)}:{n}: section reference outside "
+                         f"`(DESIGN §n)` - docs/DESIGN.md does not ship with the "
+                         f"plugin, so state the rule here and cite it in parentheses")
+
 
 def check_delivery(tracked: set[str], installed: dict[str, str],
                    resident: str) -> int:
@@ -608,6 +628,7 @@ def main() -> int:
 
     # Prose figures last, so their findings read after the structural ones.
     n_delivery = check_delivery(tracked, installed, resident)
+    check_section_refs()
 
     if resident:
         check_figures(len(skill_dirs), len(resident.splitlines()),

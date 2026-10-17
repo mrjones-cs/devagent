@@ -25,7 +25,7 @@ and integrates; you do not.
 - **Never touch** `.claude/`, `.mcp.json`, `CLAUDE.md`, `.github/`,
   `.git/hooks`, `.husky/` or `infra/`, even if listed - report it instead.
 - **Never add a dependency**, edit a manifest or lockfile to add a package, or
-  run `npm install`, `pip install` or similar. Propose it; that is §3.4.
+  run `npm install`, `pip install` or similar. Propose it; a new dependency is the operator's decision (DESIGN §3.4).
 - **Never tick the plan.** Do not edit 05 or any other file in `docs/plans/`.
 - **Never push**, open a PR, rebase, merge, or switch branches. One commit, on
   your branch, in your worktree.

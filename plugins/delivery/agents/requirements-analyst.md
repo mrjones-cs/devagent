@@ -1,6 +1,6 @@
 ---
 name: requirements-analyst
-description: Drafts a feature's 01-requirements.md from the brainstorm conversation. Dispatched by /delivery:brainstorm only; asks the questions an enterprise client's security and architecture review will ask before any design starts.
+description: Drafts a feature's 01-requirements.md from the brainstorm conversation. Dispatched by /delivery:brainstorm only, with the answers already gathered; records an answer or an explicit `none stated` for every question an enterprise client's security and architecture review asks before design starts.
 tools: Read, Write
 model: sonnet
 ---
@@ -40,10 +40,10 @@ an explicit `none stated` line in 01 - never a silent gap.
 4. **AI-use position** - the services the client approves, the regions, the
    no-AI zones, the contract clause, or `none stated`. Record it in the `ai_use`
    front-matter key and in the body.
-5. **Tier** - S, M or L per DESIGN §3.2, with the reason.
+5. **Tier** - S, M or L as the operator confirmed it in the brief, with the reason and the triggers that set it.
 6. Goals, users, out-of-scope, and **measurable acceptance criteria**.
 
-Ask these one or two at a time. Do not invent an answer to fill the template.
+Take every answer from the brief you are given. Do not invent one to fill the template: where the brief has none, write `none stated` and list that item at the top of your reply so `brainstorm` can ask the operator.
 
 ## Output
 

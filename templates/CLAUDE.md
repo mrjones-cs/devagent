@@ -65,7 +65,7 @@ frequently the correct way to satisfy VERIFICATION below.
 # CONTENT CONSTRAINTS
 # ======================================================
 
-**NEVER EVER** put a client's name into a PDF, PPTX, or any other document
+**Never** put a client's name into a PDF, PPTX, or any other document
 artifact — brand, trading name, product name, legal entity, or domain.
 **Assume EVERY client name is constrained, always.** This is a blanket
 rule by design: there is no list to consult, nothing to keep current, and
@@ -125,7 +125,7 @@ If unsure whether a given string qualifies, default to generic language.
 # VERIFICATION
 # ======================================================
 
-IMPORTANT: Before reporting ANY task complete, prove it works — with an
+Before reporting ANY task complete, prove it works — with an
 observation you made, after the change, on the real artifact or the real
 surface. "The code looks right" is not verification. If you did not
 check, the task is not done, and reporting it done is itself the defect.
@@ -200,7 +200,7 @@ next to it.
 # CUSTOMER CONFIDENTIALITY - HIGHEST PRIORITY
 # ======================================================
 
-IMPORTANT: Our projects contain highly confidential customer material.
+Our projects contain highly confidential customer material.
 The sensitive asset is not hosted customer data (we do not ingest their
 production data) — it is knowledge of what a customer is building:
 
@@ -247,7 +247,7 @@ production data) — it is knowledge of what a customer is building:
 # AGENT AND DEVELOPER TOOLCHAIN SECURITY - HIGHEST PRIORITY
 # ======================================================
 
-IMPORTANT: Every other security rule protects something we BUILD. This one
+Every other security rule protects something we BUILD. This one
 protects the machine we build it ON, which is the higher value target.
 That workstation typically holds cloud administration credentials, GitHub
 write access, signed-in identity planes, and customer source code. **It is
@@ -357,7 +357,7 @@ on our own machine.
 # SECURITY - OWASP SCREENING
 # ======================================================
 
-IMPORTANT: Screen all code you write or modify against the OWASP Top 10 —
+Screen all code you write or modify against the OWASP Top 10 —
 new features, refactors, and code reviews alike. Consider which categories
 a change touches BEFORE writing, and include a security check in
 verification, stating which categories were reviewed and any findings.
@@ -376,7 +376,7 @@ authorized security-testing context.
 # VENDOR ACCOUNTS - MFA REQUIRED
 # ======================================================
 
-IMPORTANT: MFA is mandatory on every vendor/SaaS/cloud account.
+MFA is mandatory on every vendor/SaaS/cloud account.
 
 - **New accounts**: Whenever a vendor account is created (by the user or
   with your help), enabling MFA is a REQUIRED step of account setup — not
@@ -396,7 +396,7 @@ IMPORTANT: MFA is mandatory on every vendor/SaaS/cloud account.
 # LICENSE COMPLIANCE - CUSTOMER DELIVERABLES
 # ======================================================
 
-IMPORTANT: Code we deliver becomes the customer's IP. A copyleft
+Code we deliver becomes the customer's IP. A copyleft
 dependency can contaminate their proprietary codebase.
 
 - **Check the license of every new dependency** before adding it
@@ -418,7 +418,7 @@ dependency can contaminate their proprietary codebase.
 # INCIDENT RESPONSE - LEAKED CREDENTIALS
 # ======================================================
 
-IMPORTANT: Discovering a live credential where it shouldn't be is an
+Discovering a live credential where it shouldn't be is an
 incident, not a cleanup chore. This stays resident because discovery can
 happen on any turn, in any file. If you find a secret (API key, password,
 token, private key) in source code, git history, logs, terminal
@@ -446,7 +446,7 @@ remediation.
 # TESTING STANDARDS - COVERAGE
 # ======================================================
 
-IMPORTANT: Code we deliver must be well-tested. Coverage is a floor,
+Code we deliver must be well-tested. Coverage is a floor,
 not a target — assertion quality beats percentage-chasing.
 
 - **>= 80% line AND branch coverage on new and changed code.** Enforced
@@ -461,7 +461,7 @@ not a target — assertion quality beats percentage-chasing.
 # ACCESSIBILITY - CUSTOMER-FACING UIs
 # ======================================================
 
-IMPORTANT: All customer-facing UI work meets **WCAG 2.1 AA** as the
+All customer-facing UI work meets **WCAG 2.1 AA** as the
 floor. Federal deliverables additionally trigger Section 508 — same
 technical bar, contractual weight.
 
