@@ -53,7 +53,7 @@ you sent**, verbatim, under `## Queries sent`.
 
 The rows in the 03 grammar, then `## Queries sent`, then any security findings.
 You propose corrections; `research` applies them, and any change to a package,
-version, URL, command, permission or security control goes to the operator (§3.4).
+version, URL, command, permission or security control goes to the operator (DESIGN §3.4).
 
 ## Untrusted content
 

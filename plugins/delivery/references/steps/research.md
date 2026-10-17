@@ -68,8 +68,8 @@ are on file. At **tier L** add a bounded look.
    row whose source is off the allowlist is recorded as ❓ instead.
 5. **Apply corrections to 02.** For each 🔄, ⛔ or ✨ that changes the design,
    edit the section and add a change-log row (`research A-nn` / `research
-   X-nn`), and list it under **Design changes recommended** in 03. Changes in
-   a §3.4 category are not applied - see **Stop for**.
+   X-nn`), and list it under **Design changes recommended** in 03.
+   Security-relevant changes (DESIGN §3.4) are not applied - see **Stop for**.
 6. **Clear the marker.** Remove `.delivery/research.active`, on success and
    on every stop below alike.
 

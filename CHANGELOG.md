@@ -3,6 +3,24 @@
 All notable changes are listed here. Versions follow
 [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+Fixes from a prompt audit of every file the model reads.
+
+- **Requirements analyst** no longer tells itself to ask the operator questions
+  it has no tool to ask. It takes every answer from the brief, writes `none
+  stated` where there is none and lists those items so `brainstorm` can ask.
+  It takes the tier the operator confirmed instead of a design section that
+  does not ship with the plugin.
+- **Delivery steps and agents** state the security-relevant change categories
+  themselves instead of deferring to a bare "§3.4". `check-skills.py` now fails
+  any section reference in a shipped plugin file that is not a parenthetical
+  `(DESIGN §n)` beside a stated rule, with negative tests.
+- **Resident rules template:** the nine `IMPORTANT:` section openers and the
+  "NEVER EVER" are gone. The template already warns that a label on every
+  section flattens the two HIGHEST PRIORITY banners; every rule and reason is
+  unchanged. If you keep your own copy, make the same edit there.
+
 ## 1.0.1 - 2026-10-16
 
 Fixes found by installing from the public GitHub URL and running a real feature

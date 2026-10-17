@@ -74,7 +74,7 @@ conversation, and the other lenses' views, into the review. For each:
 ## Route (DESIGN §4.3)
 
 A finding **goes to the operator** if it is **high or critical**, or was
-found by **≥ 2 reviewers**, or its fix falls in a §3.4 category (below).
+found by **≥ 2 reviewers**, or its fix is a security-relevant change listed below (DESIGN §3.4).
 Present each with the finding, the fix, and a recommendation.
 Otherwise it is applied, or dropped with a one-line `rejected — <reason>`.
 
