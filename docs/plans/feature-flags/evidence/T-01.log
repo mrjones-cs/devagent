@@ -1,0 +1,98 @@
+$ bash scripts/test-check-plan.sh
+[run-verify] task T-01 · exit 0 · 9.8s
+
+check-plan.py tests
+  [32mPASS[0m good fixture passes with only the clean summary
+  [32mPASS[0m plan generated from the templates passes
+  [32mPASS[0m the design template's own D-1 is a definition the checker accepts
+  [32mPASS[0m bad-duplicate-id
+  [32mPASS[0m bad-dangling-ref
+  [32mPASS[0m bad-depends-cycle
+  [32mPASS[0m bad-evidence
+  [32mPASS[0m bad-evidence-hash
+  [32mPASS[0m bad-evidence-log-missing
+  [32mPASS[0m bad-evidence-zero-tests
+  [32mPASS[0m bad-evidence-manual
+  [32mPASS[0m bad-review-outcome
+  [32mPASS[0m bad-review-outcome-vocabulary
+  [32mPASS[0m bad-applied-change
+  [32mPASS[0m bad-needs-decision
+  [32mPASS[0m bad-verify-allowlist
+  [32mPASS[0m bad-verify-metachar
+  [32mPASS[0m bad-source-allowlist
+  [32mPASS[0m bad-source-allowlist-github
+  [32mPASS[0m bad-deny-list
+  [32mPASS[0m bad-blocked-reason
+  [32mPASS[0m bad-in-progress-owner
+  [32mPASS[0m bad-front-matter
+  [32mPASS[0m bad-status
+  [32mPASS[0m bad-format
+  [32mPASS[0m bad-table-separator
+  [32mPASS[0m bad-id-pattern
+  [32mPASS[0m bad-change-source
+  [32mPASS[0m bad-research-grammar
+  [32mPASS[0m bad-task-grammar
+  [32mPASS[0m bad-review-grammar
+  [32mPASS[0m deny-list output does not echo the term
+  [32mPASS[0m verify with metacharacter ;
+  [32mPASS[0m verify with metacharacter |
+  [32mPASS[0m verify with metacharacter &
+  [32mPASS[0m verify with metacharacter $
+  [32mPASS[0m verify with metacharacter `
+  [32mPASS[0m verify with metacharacter >
+  [32mPASS[0m verify with metacharacter <
+  [32mPASS[0m 03 without a Queries sent section
+  [32mPASS[0m research engine off the vocabulary
+  [32mPASS[0m research Checked not a date
+  [32mPASS[0m research source part neither URL nor live:
+  [32mPASS[0m research table without Engine column
+  [32mPASS[0m ⛔ row with no official URL
+  [32mPASS[0m generator not delivery@<tag>
+  [32mPASS[0m date not YYYY-MM-DD
+  [32mPASS[0m step off the vocabulary
+  [32mPASS[0m step does not match file name
+  [32mPASS[0m 01 without tier
+  [32mPASS[0m 01 without a Data handled section
+  [32mPASS[0m 01 with an empty Client constraints section
+  [32mPASS[0m 04 without reads
+  [32mPASS[0m reads names a missing file
+  [32mPASS[0m file without front matter
+  [32mPASS[0m empty verify_allowed
+  [32mPASS[0m manual_evidence not a list
+  [32mPASS[0m task state off the vocabulary
+  [32mPASS[0m task heading without a state
+  [32mPASS[0m depends not T-nn
+  [32mPASS[0m timeout not <n>s|m|h
+  [32mPASS[0m depends with a one-digit ID
+  [32mPASS[0m evidence not in run-verify form
+  [32mPASS[0m evidence with a non-zero exit
+  [32mPASS[0m evidence log named for another task
+  [32mPASS[0m outcome cites a one-digit change ID
+  [32mPASS[0m needs-decision on an undefined decision
+  [32mPASS[0m change-log source cites an undefined assumption
+  [32mPASS[0m change-log source with a one-digit task ID
+  [32mPASS[0m change log without a Source column
+  [32mPASS[0m same A-nn twice in one research file
+  [32mPASS[0m same A-nn in two research files
+  [32mPASS[0m applied → C-nn with no 02 at all
+  [32mPASS[0m folder with no plan files
+  [32mPASS[0m ESC, U+202E and a newline print as ? and each failure stays on one line
+  [32mPASS[0m a 400-character value is cut to 300 code points
+  [32mPASS[0m sanitise keeps 300, cuts 301, replaces Zl, Zp, tab and ZWJ, keeps emoji
+  [32mPASS[0m missing folder exits 1
+  [32mPASS[0m no arguments is a usage error
+  [32mPASS[0m --hook silent on a passing plan
+  [32mPASS[0m --hook silent on a path outside docs/plans/
+  [32mPASS[0m --hook silent on a file directly in docs/plans/
+  [32mPASS[0m --hook prints the failed rule to stderr, exit 2
+  [32mPASS[0m --all fails when one folder fails
+  [32mPASS[0m --all passes when every folder passes
+  [32mPASS[0m --all with no docs/plans/ exits 1
+  [32mPASS[0m [x] tasks with no T-nn commit fail
+  [32mPASS[0m --hook skips the commit rule (the edit precedes its commit)
+  [32mPASS[0m one T-nn commit per [x] task passes
+  [32mPASS[0m two T-01 commits fail
+  [32mPASS[0m a verification-only task's evidence-only commit counts as its commit
+  [32mPASS[0m a second T-01 commit touching its evidence log still fails
+
+92 passed, 0 failed
