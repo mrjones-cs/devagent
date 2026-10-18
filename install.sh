@@ -186,5 +186,5 @@ Next, inside Claude Code, install the plugins:
 
 Then run ./install.sh once more, so the research rule names the path the
 plugin actually loads from, and start a NEW session: /context should list
-the 13 devagent-standards skills and the 9 delivery skills.
+the 14 devagent-standards skills and the 9 delivery skills.
 NEXT

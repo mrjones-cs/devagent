@@ -99,7 +99,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 - timeout: 15m
 - evidence: run-verify · exit 0 · tests 120 · 25.3s · log evidence/T-04.log sha256:feb4d7281fcbe3b85b1df7d1cb9ee7b4fae99fbd9990f9e487ed5a5d7e274f9c · 2026-10-17
 
-### T-05 [ ] `feature-flags` skill, resident stub and skill counts
+### T-05 [x] `feature-flags` skill, resident stub and skill counts
 - depends: none
 - files: plugins/devagent-standards/skills/feature-flags/SKILL.md, plugins/devagent-standards/skills/engagement-closeout/SKILL.md, templates/CLAUDE.md, README.md, docs/DESIGN.md, .claude-plugin/marketplace.json, plugins/devagent-standards/.claude-plugin/plugin.json
 - acceptance:
@@ -111,6 +111,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
   - `check-skills.py` is clean, and `bash scripts/test-check-skills.sh` still passes (AC-5).
 - verify: `python3 scripts/check-skills.py`
 - timeout: 20m
+- evidence: run-verify · exit 0 · tests 14 · 0.1s · log evidence/T-05.log sha256:9efe9147f1fd9cb8cf255380d359c04763f14e7e1afee48926d042239e1397aa · 2026-10-18
 
 ## Phase 3 — Workflow text
 

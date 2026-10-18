@@ -29,7 +29,7 @@ flowchart LR
     end
     subgraph STD["Plugin: devagent-standards (WHAT must be true)"]
       direction TB
-      SK["13 skills: auth-portal · api-security · web-browser-security · llm-app-security · encryption · cloud-infra · stack-selection · observability · document-artifact · incident-breach · verification-methods · engagement-closeout · public-release<br/>+ OWASP checklist"]
+      SK["14 skills: auth-portal · api-security · web-browser-security · llm-app-security · encryption · cloud-infra · stack-selection · observability · document-artifact · incident-breach · verification-methods · engagement-closeout · public-release · feature-flags<br/>+ OWASP checklist"]
       HK["devagent-guard hooks, enforcing<br/>Pre: pipe-to-shell · tls-disabled · going-public · unpinned-install · credential-read · git-push · aws-outside-profile · agent-config-write · audit-tamper · fetch-allowlist<br/>Post: per-project audit log · Start: health check"]
     end
     subgraph DEL["Plugin: delivery (HOW the work runs)"]
@@ -102,7 +102,7 @@ lighter design, research and panel (§3.2).
 |---|---|---|---|---|
 | Resident | `~/.claude/CLAUDE.md` | Your prohibitions and rules whose failure is *not noticing*; one stub per standards skill. Start from `templates/CLAUDE.md` | your own file, linked by `install.sh` | every session |
 | Resident | Built-in auto-memory | Operator preferences and feedback | `~/.claude/projects/…/memory/` | every session |
-| Standards | 13 skills + OWASP checklist | The detailed standard per domain | `plugins/devagent-standards/` | on description match or stub |
+| Standards | 14 skills + OWASP checklist | The detailed standard per domain | `plugins/devagent-standards/` | on description match or stub |
 | Standards | devagent-guard | Deterministic backing for the toolchain rules; the audit log; session health check. Enforces by default (`MODE`); `DEVAGENT_GUARD_MODE=warn` rolls back locally | `plugins/devagent-standards/hooks/` | every tool call / session start |
 | Delivery | 9 step skills | The workflow (§3); thin wrappers over step files | `plugins/delivery/skills/<step>/SKILL.md` | when typed |
 | Delivery | Step files | The instructions for each step, readable by `plan` | `plugins/delivery/references/steps/` | by a step skill or `plan` |

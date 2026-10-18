@@ -8,8 +8,8 @@ DevAgent is three things that work together:
 
 | Part | What it is | Installed by |
 | --- | --- | --- |
-| **Resident rules** | A `CLAUDE.md` template (615 lines, ~6.6k tokens, loaded on every turn): the prohibitions and rules Claude must carry on every turn (confidentiality, toolchain security, verification) | `./install.sh` |
-| **`devagent-standards`** plugin | Thirteen on-demand skills (auth, APIs, browser and LLM security, encryption, cloud, observability, documents, breach response, verification, close-out, public release) plus **`devagent-guard`**: hooks that check every tool call and deny or ask on dangerous ones | `/plugin install` |
+| **Resident rules** | A `CLAUDE.md` template (622 lines, ~6.7k tokens, loaded on every turn): the prohibitions and rules Claude must carry on every turn (confidentiality, toolchain security, verification) | `./install.sh` |
+| **`devagent-standards`** plugin | Fourteen on-demand skills (auth, APIs, browser and LLM security, encryption, cloud, observability, documents, breach response, verification, close-out, public release, feature flags) plus **`devagent-guard`**: hooks that check every tool call and deny or ask on dangerous ones | `/plugin install` |
 | **`delivery`** plugin | A nine-step workflow, `load → brainstorm → design → research → spec-panel → workflow → build → save` (and `plan`, which chains design to workflow), where every step writes a markdown record, and a task is ticked only with evidence a script recorded | `/plugin install` |
 
 It is a guard rail, not a sandbox: pattern matching stops accidents and
@@ -59,8 +59,8 @@ actually loads from, and start a **new** session. Check it took:
 
 In Claude Code, `/context` should show:
 
-- memory files ~6.6k tokens (was close to zero before the install)
-- the 13 devagent-standards skills and the 9 delivery skills
+- memory files ~6.7k tokens (was close to zero before the install)
+- the 14 devagent-standards skills and the 9 delivery skills
 - and `/hooks` should list the devagent-guard and delivery hooks
 
 **Next: make the rules yours.** Open `~/.claude/CLAUDE.md`, fill in the
@@ -160,7 +160,7 @@ before they leave the machine. Read the AgentCore data-use terms first: see
 
 ```
 templates/                     CLAUDE.md template, notes template, client-list example
-plugins/devagent-standards/    13 skills, OWASP checklist, devagent-guard hooks
+plugins/devagent-standards/    14 skills, OWASP checklist, devagent-guard hooks
 plugins/delivery/              9 step skills, 4 agents, 11 review lenses, step files,
                                templates, scripts (check-plan, run-verify, web-search,
                                build-*, briefing), hooks, PINS.md
