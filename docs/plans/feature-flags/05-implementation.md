@@ -85,7 +85,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 
 ## Phase 2 — Build hold and standard
 
-### T-04 [ ] `build-ready` holds flag remove tasks
+### T-04 [x] `build-ready` holds flag remove tasks
 - depends: none
 - files: plugins/delivery/scripts/build-lib.py, plugins/delivery/scripts/build-ready, scripts/test-build-protocol.sh
 - acceptance:
@@ -97,6 +97,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
   - `COVER=1` reports ≥ 80% line and branch coverage of the changed lines (02 §1.5, R-04)
 - verify: `env COVER=1 bash scripts/test-build-protocol.sh`
 - timeout: 15m
+- evidence: run-verify · exit 0 · tests 120 · 25.3s · log evidence/T-04.log sha256:feb4d7281fcbe3b85b1df7d1cb9ee7b4fae99fbd9990f9e487ed5a5d7e274f9c · 2026-10-17
 
 ### T-05 [ ] `feature-flags` skill, resident stub and skill counts
 - depends: none

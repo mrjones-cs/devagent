@@ -380,6 +380,10 @@ check("a branch carrying Playwright output is refused even if listed and approve
 # 11. build-ready: non-overlapping groups of at most 3; one task unless enforce
 rrepo, rdir = mkrepo(FIX / "ready" / "05-implementation.md", feature="r")
 p = run("ready", rdir)
+check("an unflagged plan's output is byte-for-byte unchanged",
+      p.returncode == 0 and p.stderr == "" and p.stdout ==
+      "guard mode enforce: up to 3 builder(s)\nT-01\tFirst\tsrc/a.txt\nT-05\tIndependent docs\tdocs/x.md\n"
+      "T-06\tIndependent lib\tlib/y.py\nready but deferred: T-02, T-03, T-07\n", repr(p.stdout))
 picked = re.findall(r"^(T-\d+)\t", p.stdout, re.M)
 check("enforce: at most 3 ready, non-overlapping tasks in ID order", picked == ["T-01", "T-05", "T-06"], p.out)
 check("overlapping and later tasks are deferred, unmet depends excluded", "deferred: T-02, T-03, T-07" in p.stdout and "T-04" not in p.stdout, p.out)
@@ -395,6 +399,50 @@ t = plan_of(rdir).replace("### T-01 [ ]", "### T-01 [x]").replace("### T-02 [ ]"
 (rdir / "05-implementation.md").write_text(t)
 p = run("ready", rdir)
 check("nothing ready says so", "no ready tasks" in p.stdout and p.returncode == 0, p.out)
+
+# 11b. Flag remove tasks are held for rollout until --removal (02 §1.5)
+base_plan = (FIX / "ready" / "05-implementation.md").read_text()
+flagged = (base_plan
+           .replace("### T-05 [ ] Independent docs\n- depends: none\n",
+                    "### T-05 [ ] Independent docs\n- depends: none\n- flag: add new-ui\n")
+           .replace("### T-06 [ ] Independent lib\n- depends: none\n",
+                    "### T-06 [ ] Independent lib\n- depends: none\n- flag: remove new-ui\n"
+                    "- flag_owner: client platform lead\n- remove_by: 2027-01-31\n"))
+fplan = W / "flagged-05.md"
+fplan.write_text(flagged)
+frepo, fdir2 = mkrepo(fplan, feature="fl")
+p = run("ready", fdir2)
+check("a ready remove task is left out and the add task is offered",
+      re.findall(r"^(T-\d+)\t", p.stdout, re.M) == ["T-01", "T-05", "T-07"] and p.returncode == 0, p.out)
+check("the held line names the task, flag and date",
+      "held for rollout: T-06 (flag new-ui, remove by 2027-01-31)\n" in p.stdout, p.out)
+check("a held task is not reported as deferred", "deferred: T-02, T-03\n" in p.stdout, p.out)
+p = run("ready", fdir2, "--removal")
+check("--removal offers the remove task like any other",
+      re.findall(r"^(T-\d+)\t", p.stdout, re.M) == ["T-01", "T-05", "T-06"] and "held" not in p.stdout
+      and p.returncode == 0, p.out)
+p = run("ready")
+check("the usage line shows [--removal]", p.returncode == 2 and "[--removal]" in p.out, p.out)
+# only ready task is the held one
+only = re.sub(r"### (T-0[1-57]) \[ \]", r"### \1 [x]", flagged)
+(fdir2 / "05-implementation.md").write_text(only)
+p = run("ready", fdir2)
+check("a plan whose only ready task is held prints the held line and no ready tasks",
+      p.returncode == 0 and re.findall(r"^(T-\d+)\t", p.stdout, re.M) == []
+      and p.stdout.endswith("held for rollout: T-06 (flag new-ui, remove by 2027-01-31)\nno ready tasks\n"), repr(p.stdout))
+# a second `- flag:` bullet cannot hide the remove; hostile values are sanitised and capped
+hostile = only.replace("- flag: remove new-ui\n", "- flag: add decoy\n- flag: remove x\x1b[2Jy‮\n").replace(
+    "- remove_by: 2027-01-31\n", "- remove_by: " + "9" * 120 + "\n")
+(fdir2 / "05-implementation.md").write_text(hostile)
+p = run("ready", fdir2)
+held = [l for l in p.stdout.splitlines() if l.startswith("held for rollout")]
+check("a remove bullet after another flag bullet is still held, its values sanitised and capped",
+      held == ["held for rollout: T-06 (flag x?[2Jy?, remove by " + "9" * 79 + "…)"] and "\x1b" not in p.stdout, repr(p.stdout))
+(fdir2 / "05-implementation.md").write_text(only.replace("- remove_by: 2027-01-31\n", "").replace(
+    "- flag: remove new-ui", "- flag: remove"))
+p = run("ready", fdir2)
+check("a remove task missing its name and date is still held, shown as ?",
+      "held for rollout: T-06 (flag ?, remove by ?)\n" in p.stdout, repr(p.stdout))
 
 # 12. Repo commit convention from docs/knowledge/conventions.md
 repo, fdir = mkrepo()

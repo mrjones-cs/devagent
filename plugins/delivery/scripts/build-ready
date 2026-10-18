@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""build-ready <feature-dir> [--max N]
+"""build-ready <feature-dir> [--max N] [--removal]
 Ready tasks with non-overlapping files; more than one only in guard enforce mode.
 
 All logic lives in build-lib.py beside this file; see its docstring for the
