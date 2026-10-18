@@ -470,6 +470,160 @@ mkdir -p "$WORK/empty/.delivery"
 OUT="$(cd "$WORK/empty" && "${RUN[@]}" --all 2>&1)"; RC=$?
 [ "$RC" -eq 1 ] && ok "--all with no docs/plans/ exits 1" || bad "--all without docs/plans (exit $RC)" "$OUT"
 
+# ---- --flags report (feature-flags 02 §1.3) -----------------------------------
+# expect_flags NAME WANT_RC WANT_OUTPUT ARGS... : exact output and exit code
+expect_flags() {
+  local name="$1" want_rc="$2" want="$3"; shift 3
+  check "$@"
+  if [ "$RC" -eq "$want_rc" ] && [ "$OUT" = "$want" ]; then ok "$name"
+  else bad "$name (exit $RC, wanted $want_rc)" "$(printf 'got:\n%s\nwanted:\n%s' "$OUT" "$want")"; fi
+}
+# tick DIR T-nn... : mark tasks [x] in DIR's 05 with valid run-verify evidence
+tick() {
+  python3 - "$@" <<'PY'
+import hashlib, os, sys
+folder, tids = sys.argv[1], sys.argv[2:]
+p = f"{folder}/05-implementation.md"
+text = open(p, encoding="utf-8").read()
+os.makedirs(f"{folder}/evidence", exist_ok=True)
+for tid in tids:
+    log = f"{folder}/evidence/{tid}.log"
+    open(log, "w", encoding="utf-8").write(f"{tid} verify output\n")
+    digest = hashlib.sha256(open(log, "rb").read()).hexdigest()
+    head = f"### {tid} [ ] "
+    assert text.count(head) == 1, head
+    start = text.index(head)
+    end = text.index("- timeout:", start)
+    end = text.index("\n", end) + 1
+    block = text[start:end].replace(f"### {tid} [ ] ", f"### {tid} [x] ", 1)
+    block += (f"- evidence: run-verify · exit 0 · tests 3 · 1.0s · log evidence/{tid}.log "
+              f"sha256:{digest} · 2026-10-10\n")
+    text = text[:start] + block + text[end:]
+open(p, "w", encoding="utf-8").write(text)
+PY
+}
+GF="tests/fixtures/plans/good-flagged"
+L_SEARCH="good-flagged: flag new-search · added [ ] · owner client platform lead · remove by 2027-01-31"
+L_EXPORT="good-flagged: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-03-31"
+expect_flags "--flags: open flags before their dates are live" 0 "$L_SEARCH · live
+$L_EXPORT · live" --flags "$GF" --today 2026-10-17
+expect_flags "--flags: remove_by on the report date is still live" 0 "$L_SEARCH · live
+$L_EXPORT · live" --flags "$GF" --today 2027-01-31
+expect_flags "--flags: a remove_by before the report date is overdue" 0 "$L_SEARCH · overdue
+$L_EXPORT · live" --flags "$GF" --today 2027-02-01
+expect_flags "--flags: a trailing slash on the folder still names the feature" 0 "$L_SEARCH · live
+$L_EXPORT · live" --flags "$GF/" --today 2026-10-17
+expect_flags "--flags: a folder with no flags" 0 "good: no flags" --flags tests/fixtures/plans/good --today 2026-10-17
+expect_flags "--flags: a folder that fails prints only the not-reported line, exit 1" 1 \
+  "bad-status: plan fails check-plan.py; flags not reported" --flags tests/fixtures/plans/bad-status --today 2026-10-17
+expect_flags "--flags: a failing flag-plan folder is not reported" 1 \
+  "bad-flag-plan-no-remove: plan fails check-plan.py; flags not reported" --flags tests/fixtures/plans/bad-flag-plan-no-remove
+expect_flags "--flags: a missing folder exits 1" 1 \
+  "tests/fixtures/plans/does-not-exist:0: [front-matter] not a folder" --flags tests/fixtures/plans/does-not-exist
+
+BASE=good-flagged
+# removed: both tasks [x] (and a folder that still passes every check, evidence included)
+rm -rf "${P:?}/fl"; cp -R "$P/good-flagged" "$P/fl"
+tick "$P/fl" T-02 T-06
+expect_flags "--flags: remove and add both [x] is removed, even after the date" 0 \
+  "fl: flag new-search · added [x] · owner client platform lead · remove by 2027-01-31 · removed
+fl: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-03-31 · overdue" \
+  --flags tests/fixtures/plans/fl --today 2027-06-01
+# inconsistent: remove [x] while add is not
+rm -rf "${P:?}/fl"; cp -R "$P/good-flagged" "$P/fl"
+tick "$P/fl" T-07
+expect_flags "--flags: remove [x] with add not [x] is inconsistent" 0 \
+  "fl: flag new-search · added [ ] · owner client platform lead · remove by 2027-01-31 · live
+fl: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-03-31 · inconsistent" \
+  --flags tests/fixtures/plans/fl --today 2026-10-17
+# a [x] remove task whose evidence is bad fails the folder, so nothing is reported
+printf 'tampered\n' >>"$P/fl/evidence/T-07.log"
+expect_flags "--flags: a [x] remove task with tampered evidence is not reported" 1 \
+  "fl: plan fails check-plan.py; flags not reported" --flags tests/fixtures/plans/fl --today 2026-10-17
+# beyond a year: more than 365 days after the 05 date (2026-10-04)
+mutate fl 05-implementation.md "- remove_by: 2027-03-31" "- remove_by: 2027-10-05"
+expect_flags "--flags: remove_by 366 days after the 05 date is beyond a year" 0 \
+  "fl: flag new-search · added [ ] · owner client platform lead · remove by 2027-01-31 · live
+fl: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-10-05 · live · beyond a year" \
+  --flags tests/fixtures/plans/fl --today 2026-10-17
+expect_flags "--flags: overdue and beyond a year together" 0 \
+  "fl: flag new-search · added [ ] · owner client platform lead · remove by 2027-01-31 · overdue
+fl: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-10-05 · overdue · beyond a year" \
+  --flags tests/fixtures/plans/fl --today 2028-01-01
+mutate fl 05-implementation.md "- remove_by: 2027-03-31" "- remove_by: 2027-10-04"
+expect_flags "--flags: remove_by exactly 365 days after the 05 date is not beyond a year" 0 \
+  "fl: flag new-search · added [ ] · owner client platform lead · remove by 2027-01-31 · live
+fl: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-10-04 · live" \
+  --flags tests/fixtures/plans/fl --today 2026-10-17
+# a 05 date that matches the pattern but is not a real day: no year check, no crash
+mutate fl 05-implementation.md "date: 2026-10-04" "date: 2026-02-30"
+expect_flags "--flags: an unreal 05 date skips the year check" 0 \
+  "fl: flag new-search · added [ ] · owner client platform lead · remove by 2027-01-31 · live
+fl: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-03-31 · live" \
+  --flags tests/fixtures/plans/fl --today 2026-10-17
+# [~] and [!] add tasks report their state and stay live
+mutate fl 05-implementation.md "### T-02 [ ] Add flag new-search, off by default
+" "### T-02 [!] Add flag new-search, off by default
+- reason: blocked on the flag store
+"
+expect_flags "--flags: a blocked add task reports [!] and live" 0 \
+  "fl: flag new-search · added [!] · owner client platform lead · remove by 2027-01-31 · live
+fl: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-03-31 · live" \
+  --flags tests/fixtures/plans/fl --today 2026-10-17
+# an owner holding ESC and U+202E prints them as ?, on one line
+mutate fl 05-implementation.md "- flag_owner: client data lead" "$(printf -- '- flag_owner: client\033[2J data\342\200\256 lead\033]0;x\007')"
+check --flags tests/fixtures/plans/fl --today 2026-10-17
+FL_OUT="$OUT" FL_RC="$RC" python3 - <<'PY' && ok "--flags: an owner holding ESC and U+202E prints ? on one line" || bad "--flags owner sanitiser (exit $RC)" "$OUT"
+import os, sys
+out = os.environ["FL_OUT"]
+lines = out.split("\n")
+want = "fl: flag bulk.export_v2 · added [ ] · owner client?[2J data? lead?]0;x? · remove by 2027-03-31 · live"
+sys.exit(0 if os.environ["FL_RC"] == "0" and len(lines) == 2 and lines[1] == want
+         and not any(c in out for c in "\x1b‮\x07") else 1)
+PY
+# an owner over 80 code points is cut to 79 and an ellipsis
+mutate fl 05-implementation.md "- flag_owner: client data lead" "- flag_owner: $(printf 'o%.0s' $(seq 120))"
+check --flags tests/fixtures/plans/fl --today 2026-10-17
+FL_OUT="$OUT" python3 - <<'PY' && ok "--flags: an owner is capped at 80 code points" || bad "--flags owner cap (exit $RC)" "$OUT"
+import os, sys
+line = os.environ["FL_OUT"].split("\n")[1]
+owner = line.split(" · owner ", 1)[1].split(" · remove by ", 1)[0]
+sys.exit(0 if owner == "o" * 79 + "…" else 1)
+PY
+# an unflagged plan with flag bullets fails, so nothing is reported for it
+mutate fl 05-implementation.md "flagged: true" "flagged: false"
+expect_flags "--flags: flag bullets in an unflagged 05 fail the folder" 1 \
+  "fl: plan fails check-plan.py; flags not reported" --flags tests/fixtures/plans/fl
+rm -rf "${P:?}/fl"
+BASE=good
+
+# --flags --all: every folder, each line prefixed with its feature; a failing
+# folder is named and the rest are still reported
+cp -R "$P/good-flagged" "$R/docs/plans/feature-f"
+expect_flags "--flags --all reports every folder, each line prefixed" 0 "feature-a: no flags
+feature-f: flag new-search · added [ ] · owner client platform lead · remove by 2027-01-31 · live
+feature-f: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-03-31 · live" --flags --all --today 2026-10-17
+cp -R "$P/bad-status" "$R/docs/plans/feature-e"
+expect_flags "--flags --all with a failing folder names it, reports the rest, exit 1" 1 "feature-a: no flags
+feature-e: plan fails check-plan.py; flags not reported
+feature-f: flag new-search · added [ ] · owner client platform lead · remove by 2027-01-31 · live
+feature-f: flag bulk.export_v2 · added [ ] · owner client data lead · remove by 2027-03-31 · live" --flags --all --today 2026-10-17
+rm -rf "$R/docs/plans/feature-e" "$R/docs/plans/feature-f"
+# without --today the report uses the local date and still runs
+check --flags "$GF"
+[ "$RC" -eq 0 ] && [ "$(printf '%s\n' "$OUT" | grep -cE '^good-flagged: flag (new-search|bulk\.export_v2) · added \[ \] · .* · (live|overdue)$')" -eq 2 ] && ok "--flags without --today uses the local date" || bad "--flags default date (exit $RC)" "$OUT"
+
+# usage errors exit 2 and report nothing
+for args in "--today 2027-02-30" "--today 20270131" "--today 2027-W01-1" "--today tomorrow" "--bogus" "--hook docs/plans/feature-a/05-implementation.md"; do
+  # shellcheck disable=SC2086
+  check --flags $args "$GF"
+  [ "$RC" -eq 2 ] && ! printf '%s' "$OUT" | grep -q '^good-flagged:' && ok "--flags $args is a usage error (exit 2)" || bad "--flags $args (exit $RC, wanted 2)" "$OUT"
+done
+check --today 2026-10-17 "$GF"
+[ "$RC" -eq 2 ] && ok "--today without --flags is a usage error" || bad "--today without --flags (exit $RC)" "$OUT"
+check --flags
+[ "$RC" -eq 2 ] && ok "--flags with no folder and no --all is a usage error" || bad "--flags alone (exit $RC)" "$OUT"
+
 # ---- exactly one T-nn commit per [x], in a real repository ----------------------
 G="$WORK/gitrepo"
 mkdir -p "$G/docs/plans" "$G/src"
