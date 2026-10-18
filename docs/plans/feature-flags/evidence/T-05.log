@@ -1,0 +1,7 @@
+$ python3 scripts/check-skills.py
+[run-verify] task T-05 · exit 0 · 0.1s
+
+checked 14 skills: api-security, auth-portal, cloud-infra, document-artifact, encryption, engagement-closeout, feature-flags, incident-breach, llm-app-security, observability, public-release, stack-selection, verification-methods, web-browser-security
+  note: document-artifact: Related lists `dataviz` - not an installed skill (fine if it is a built-in, e.g. dataviz)
+  note: verification-methods: Related lists `dataviz` - not an installed skill (fine if it is a built-in, e.g. dataviz)
+clean

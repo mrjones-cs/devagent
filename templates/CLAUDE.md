@@ -529,6 +529,13 @@ untrusted output. The system prompt is not a security control; the model
 is not an access control. → Invoke when designing or reviewing anything
 that calls a model, retrieves documents, or gives an agent tools.
 
+**`devagent-standards:feature-flags`** — A flag changes production without
+a deploy, so it is a control surface. Security-relevant flags evaluate on
+the server; client keys and flagged-off bundle code are public. Never gate
+a security control on a flag. Model features get a kill switch that fails
+off. Every flag has an owner and a removal date. → Invoke before adding,
+evaluating, flipping or removing a flag, or choosing a flag service.
+
 **`devagent-standards:encryption`** — Encrypted in transit and at rest,
 everywhere, by default; classification comes later and is often wrong, so
 encrypt first. **Never disable certificate verification.** Secrets live in

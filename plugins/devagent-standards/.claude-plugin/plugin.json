@@ -1,7 +1,7 @@
 {
   "name": "devagent-standards",
   "version": "1.0.1",
-  "description": "Engineering standards as thirteen on-demand skills: auth, API, browser and LLM security; encryption; cloud infrastructure and cost; stack selection; observability; document artifacts; breach response; verification methods; engagement close-out; public release. Plus devagent-guard hooks enforcing the toolchain rules (deny or ask).",
+  "description": "Engineering standards as fourteen on-demand skills: auth, API, browser and LLM security; encryption; cloud infrastructure and cost; stack selection; observability; document artifacts; breach response; verification methods; engagement close-out; public release; feature flags. Plus devagent-guard hooks enforcing the toolchain rules (deny or ask).",
   "author": {
     "name": "DevAgent contributors"
   },

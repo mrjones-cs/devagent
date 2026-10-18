@@ -71,6 +71,10 @@ customer environment nobody is monitoring on either side.**
 - **Vendor accounts and billing** bought for the engagement: transfer or
   cancel, and confirm MFA is enabled on anything transferred (resident
   VENDOR ACCOUNTS).
+- **Live feature flags** are part of what is handed over: list every flag
+  still live in the deliverable with its client-side owner and removal
+  date, and state that the client owns removal after delivery (see
+  `feature-flags`).
 
 ## Attest the IP and the licensing
 
@@ -133,5 +137,6 @@ provable at the moment of delivery, not reconstructed later.
 - `cloud-infra` — account teardown and per-engagement isolation
 - `incident-breach` — preservation duties can outlive an engagement
 - `document-artifact` — no notice of yours on customer deliverables
+- `feature-flags` — flags still live at handover
 - LICENSE COMPLIANCE · CUSTOMER CONFIDENTIALITY · VENDOR ACCOUNTS ·
   AGENT AND DEVELOPER TOOLCHAIN SECURITY (all resident in CLAUDE.md)

@@ -131,26 +131,26 @@ t "plugin renamed" "expected 'devagent-standards'" \
 
 # ---- the figure rules, added 2026-08-23 -----------------------------------
 t "stale skill count in prose" "skill count reads" \
-  "perl -0pi -e 's/- the 13 devagent-standards skills/- the 11 devagent-standards skills/' README.md"
+  "perl -0pi -e 's/- the 14 devagent-standards skills/- the 11 devagent-standards skills/' README.md"
 
 t "stale resident line count" "resident line count reads" \
-  "perl -0pi -e 's/\(615 lines,/(540 lines,/' README.md"
+  "perl -0pi -e 's/\(622 lines,/(540 lines,/' README.md"
 
 t "stale token figure" "token figure reads" \
-  "perl -0pi -e 's/615 lines, ~6\.6k tokens/615 lines, ~5.6k tokens/' README.md"
+  "perl -0pi -e 's/622 lines, ~6\.7k tokens/622 lines, ~5.6k tokens/' README.md"
 
 t "a figure excused by a LATER past marker is still caught" "token figure reads" \
-  "perl -0pi -e 's/memory files ~6\.6k tokens \(was close/memory files ~5.6k tokens (was close/' README.md"
+  "perl -0pi -e 's/memory files ~6\.7k tokens \(was close/memory files ~5.6k tokens (was close/' README.md"
 
 # ---- added 2026-10-03: two ways a stale count passed unflagged -------------
 t "a past marker on the PREVIOUS list item does not excuse this one" "skill count reads" \
-  "perl -0pi -e 's/- the 13 devagent-standards skills and/- the 12 devagent-standards skills and/' README.md"
+  "perl -0pi -e 's/- the 14 devagent-standards skills and/- the 12 devagent-standards skills and/' README.md"
 
 t "a past marker before a quoted sentence end does not leak forward" "skill count reads" \
   "printf '\nThe old note said \"it was smaller.\" The 12 devagent-standards skills load on demand.\n' >> README.md"
 
 t "a capitalised number-word count is still caught" "skill count reads" \
-  "perl -0pi -e 's/Thirteen on-demand skills/Twelve on-demand skills/' README.md"
+  "perl -0pi -e 's/Fourteen on-demand skills/Twelve on-demand skills/' README.md"
 
 # ---- added 2026-10-14 (T-02): the delivery plugin's rules ------------------
 # Helpers plant a minimal delivery skill / agent / lens in the throwaway copy.
@@ -183,7 +183,7 @@ t "delivery lens missing when" "missing \`when\`" \
   "dlens attacker \"standards: [auth-portal]\nmodel: opus\""
 
 t "stale skill count in a manifest description" "skill count reads" \
-  "perl -0pi -e 's/thirteen on-demand skills/twelve on-demand skills/' .claude-plugin/marketplace.json"
+  "perl -0pi -e 's/fourteen on-demand skills/twelve on-demand skills/' .claude-plugin/marketplace.json"
 
 t "PINS.md disagreeing with the code" "the pin and the code disagree" \
   "perl -0pi -e 's/(\| delivery-plugin \| )[0-9][0-9.]*( \|)/\${1}9.9.9\${2}/' plugins/delivery/PINS.md"
