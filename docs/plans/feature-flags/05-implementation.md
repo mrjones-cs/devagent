@@ -115,7 +115,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 
 ## Phase 3 — Workflow text
 
-### T-06 [ ] Step files, build wrapper and templates
+### T-06 [x] Step files, build wrapper and templates
 - depends: T-03, T-04, T-05
 - files: plugins/delivery/references/steps/design.md, plugins/delivery/references/steps/workflow.md, plugins/delivery/references/steps/build.md, plugins/delivery/references/steps/save.md, plugins/delivery/skills/build/SKILL.md, plugins/delivery/references/templates/02-design.md, plugins/delivery/references/templates/05-implementation.md, tests/fixtures/plans/from-templates/02-design.md, tests/fixtures/plans/from-templates/05-implementation.md
 - acceptance: the steps and templates say what 02 §1.6 says.
@@ -128,6 +128,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
   - Named AC-3 step: `workflow` is run on a copy of `good-flagged/02-design.md` in a scratch folder. The 05 it writes passes `check-plan.py` with the add task first, the remove task last, and both bullets on every guarded task. The outcome is recorded in the commit message (AC-3, AC-4 save part)
 - verify: `python3 scripts/check-skills.py`
 - timeout: 20m
+- evidence: run-verify · exit 0 · tests 14 · 0.1s · log evidence/T-06.log sha256:02ea5055e3cb7f729f13c42b9997e830eac28934dc406a56a8893348a93284b2 · 2026-10-18
 
 ## Phase 4 — Records and gate
 

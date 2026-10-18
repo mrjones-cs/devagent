@@ -1,14 +1,15 @@
 ---
 name: build
-description: Execute an approved 05-implementation.md under the delivery build protocol - exclusive lock, branch and base check, verify-set approval, reconcile of interrupted tasks, fresh builder agents in worktrees, scope check, run-verify evidence, one squashed commit per task, stop on the first blocked task. Never pushes. `--status` is a read-only view.
+description: Execute an approved 05-implementation.md under the delivery build protocol - exclusive lock, branch and base check, verify-set approval, reconcile of interrupted tasks, fresh builder agents in worktrees, scope check, run-verify evidence, one squashed commit per task, stop on the first blocked task. Never pushes. `--status` is a read-only view; flag remove tasks are held until `--remove-flags`.
 disable-model-invocation: true
-argument-hint: <feature> [--status]
+argument-hint: <feature> [--status | --remove-flags]
 ---
 
 # /delivery:build
 
 Arguments: `$ARGUMENTS` - the feature name (`docs/plans/<feature>/`), optionally
-followed by `--status`.
+followed by `--status` or `--remove-flags` (run the held flag remove tasks
+after rollout).
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/steps/build.md` and follow it exactly,
 with the scripts it names under `${CLAUDE_PLUGIN_ROOT}/scripts/`. The plan,

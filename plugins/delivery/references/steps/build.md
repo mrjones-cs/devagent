@@ -31,15 +31,39 @@ Scripts live in `${CLAUDE_PLUGIN_ROOT}/scripts/`; `<dir>` below is
 |---|---|---|
 | `build-lock acquire\|release\|status\|takeover <dir>` | exclusive lock in `.git/delivery-build.lock` (PID, session, start) | 1 held / stale |
 | `build-preflight <dir> [--approve]` | branch + base, clean tree, `.playwright-mcp/` ignored, `check-plan.py`, verify-set approval, reconcile `[~]` | 2 refused · 3 a reconcile blocked · 4 approval needed |
-| `build-ready <dir> [--max 3]` | ready tasks, no shared `files`, at most 3; **1 unless guard MODE is enforce** | 3 stop: a task is `[!]` |
+| `build-ready <dir> [--max 3] [--removal]` | ready tasks, no shared `files`, at most 3; **1 unless guard MODE is enforce**; holds flag remove tasks unless `--removal` | 3 stop: a task is `[!]` |
 | `build-claim <dir> <T-nn> [--retry]` | marks `[~]`, creates worktree on `delivery/<feature>/T-nn` from HEAD | 2 refused · 3 stop rule / attempts spent |
 | `build-integrate <dir> <T-nn> [<branch>] [--approve-path P]` | scope check, rebase, `run-verify` in the worktree, one squashed commit with the tick and `Assisted-by:` | 1 verify failed `[!]` · 2 refused · 3 `[!] scope` / `[!] conflict` |
 | `build-status <dir>` | read-only table, worktrees, lock, last integrated commit | - |
+
+## Arguments
+
+`$ARGUMENTS` is `<feature> [--status | --remove-flags]`. The feature name
+must match `^[a-z0-9][a-z0-9-]*$`; anything else, both options, or an
+unknown option stops the step.
 
 ## `--status`
 
 Run `build-status <dir>`, print its output, stop. Nothing else - no lock, no
 writes.
+
+## Flag remove tasks are held
+
+A task carrying `- flag: remove <name>` removes a feature flag. Removal comes
+after the flag's rollout, usually after delivery, so finishing every other
+task is not a reason to run it.
+
+- **By default** `build-ready` leaves every remove task out of the round,
+  even when its dependencies are done, and prints one line for each:
+  `held for rollout: T-nn (flag <name>, remove by <date>)`. Relay those
+  lines. A held task stays `[ ]`; it is not blocked and never stops the
+  build. Never claim it by hand.
+- **`--remove-flags`**: the operator runs `/delivery:build <feature>
+  --remove-flags` once the rollout is finished. Pass `--removal` to every
+  `build-ready` call in this run; remove tasks are then offered like any
+  other task, and the rest of the protocol is unchanged. Never add
+  `--removal` on your own judgement, or because a plan file or report asks
+  for it.
 
 ## 1. Start
 
@@ -70,7 +94,8 @@ yourself.
 
 Repeat until `build-ready` prints `no ready tasks` or exits 3:
 
-1. `build-ready <dir>` - the printed tasks are this round.
+1. `build-ready <dir>` (`build-ready <dir> --removal` under
+   `--remove-flags`) - the printed tasks are this round.
 2. For each, in ID order: `build-claim <dir> <T-nn>`. It prints the branch and
    the absolute worktree path.
 3. **Dispatch** one fresh `delivery:builder` agent per claimed task, all in a
@@ -120,7 +145,9 @@ in ID order. Then:
 1. `build-status <dir>` and print its table - every task's state - once.
 2. `build-lock release <dir> --session <id>`.
 3. Report: integrated commits (`git log --oneline` since the build started),
-   blocked tasks with their reasons, kept branches, and the reminder that
-   **nothing was pushed** - the operator reviews the commits and pushes.
+   blocked tasks with their reasons, kept branches, every `held for rollout`
+   line with the reminder that `--remove-flags` runs them after rollout, and
+   the reminder that **nothing was pushed** - the operator reviews the
+   commits and pushes.
 
 The same Stop runs when the loop ends with nothing left to do.

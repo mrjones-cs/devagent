@@ -14,15 +14,27 @@ otherwise stop.
 `${CLAUDE_PLUGIN_ROOT}/references/templates/02-design.md`. Front matter:
 `format: delivery-plan/1`, `feature`, `step: 02-design`, `status: draft`,
 `date`, `generator: delivery@<release-tag>`, `reads: 01-requirements.md`,
-`tier` (copied from 01), and three booleans set from the design itself:
+`tier` (copied from 01), and four booleans set from the design itself:
 
 - **`personal_data`** - true if any store, log or message holds personal data.
 - **`calls_model`** - true if anything calls an AI model, retrieves documents
   for one, or gives an agent tools.
 - **`has_ui`** - true if anything renders in a browser or app.
+- **`flagged`** - true if the feature ships behind a feature flag, merged
+  dark and released later or rolled out gradually. Absent means false.
+  `workflow` copies it into 05 and plans an add task, the guarded tasks and
+  a remove task around it.
 
-These flags select review lenses later; set them honestly, never to avoid a
-lens.
+These booleans select review lenses and plan shape later; set them honestly,
+never to avoid a lens or a removal task.
+
+**When `flagged` is true**, 02 names each flag and its rollout:
+- the name, matching `^[a-z0-9][a-z0-9._-]{0,62}$` and never a client or
+  customer name or identifier;
+- what it guards, and its default (off for a new feature);
+- where it is evaluated, and who may flip it (also in the threat model);
+- the rollout: all at once, percentage or cohort, and the rollback trigger;
+- the removal: by when, and the client-side role that owns it.
 
 **Tier S skips this step.** If 01's (or NOTES.md's) tier is S, write nothing,
 say so, and point to `/delivery:workflow <feature>`.
@@ -74,6 +86,8 @@ Invoke the skill before writing the section it governs, not after:
 - `devagent-standards:cloud-infra` - any cloud resource, and the cost section.
 - `devagent-standards:observability` - Observability, for anything
   customer-facing.
+- `devagent-standards:feature-flags` - when `flagged` is true, before writing
+  the flag, its evaluation point and its rollout.
 - WCAG 2.1 AA (ACCESSIBILITY) when `has_ui` is true; the `dataviz` skill
   before any chart.
 
@@ -92,8 +106,9 @@ Invoke the skill before writing the section it governs, not after:
 ## Finish
 
 Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check-plan.py docs/plans/<feature>`
-and fix every finding in 02. Report: the file written, the three flags and
-why, the standards applied, the count of assumptions and how many are
-load-bearing, the open decisions, the `check-plan.py` result, and the next
-step (`/delivery:research <feature>`, or `/delivery:plan <feature>` to run the
-rest of the chain).
+and fix every finding in 02. Report: the file written, the four booleans
+and why (with each flag's name when `flagged` is true), the standards
+applied, the count of assumptions and how many are load-bearing, the open
+decisions, the `check-plan.py` result, and the next step
+(`/delivery:research <feature>`, or `/delivery:plan <feature>` to run the rest
+of the chain).
