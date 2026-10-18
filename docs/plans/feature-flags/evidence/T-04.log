@@ -1,0 +1,13 @@
+$ env COVER=1 bash scripts/test-build-protocol.sh
+[run-verify] task T-04 · exit 0 · 25.3s
+
+120 passed, 0 failed
+<repo>/plugins/delivery/scripts/build-claim           8      0      2      1    90%
+<repo>/plugins/delivery/scripts/build-integrate       8      0      2      1    90%
+<repo>/plugins/delivery/scripts/build-lib.py        688     51    256     35    90%
+<repo>/plugins/delivery/scripts/build-lock            8      0      2      1    90%
+<repo>/plugins/delivery/scripts/build-preflight       8      0      2      1    90%
+<repo>/plugins/delivery/scripts/build-ready           8      0      2      1    90%
+<repo>/plugins/delivery/scripts/build-status          8      0      2      1    90%
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                                                                736     51    268     41    90%

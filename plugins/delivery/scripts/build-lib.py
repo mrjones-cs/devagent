@@ -7,7 +7,7 @@ orchestrates. Entry points (thin wrappers that load this file):
 
     build-lock      acquire|release|status|takeover <feature-dir>
     build-preflight <feature-dir> [--approve]
-    build-ready     <feature-dir> [--max N]
+    build-ready     <feature-dir> [--max N] [--removal]
     build-claim     <feature-dir> <T-nn> [--retry]
     build-integrate <feature-dir> <T-nn> [<branch>] [--approve-path PATH]...
     build-status    <feature-dir>
@@ -38,6 +38,7 @@ import shutil
 import subprocess
 import sys
 import time
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -60,6 +61,11 @@ NEXT_HEAD = re.compile(r"^#{2,3} ", re.M)
 BULLET = re.compile(r"^- ([a-z][a-z _]*):\s*(.*)$")
 EVIDENCE = re.compile(r"^- evidence: (run-verify · exit 0 · .*)$", re.M)
 FRONT_BULLETS = ("owner", "reason", "attempts")
+# `- flag: remove <name>` marks a flag remove task, held until --removal (02 §1.5).
+FLAG_REMOVE = re.compile(r"^- flag:\s*remove(?:\s+(.*?))?\s*$")
+REMOVE_BY = re.compile(r"^- remove_by:\s*(.*?)\s*$")
+FIELD_LIMIT = 80  # code points, for each plan value echoed in a held line
+UNSAFE_CATEGORIES = {"Cc", "Cf", "Zl", "Zp"}
 
 # Paths that always need the operator, even when a task lists them.
 APPROVAL_DIRS = (".claude", ".github", ".husky", "infra")
@@ -557,10 +563,31 @@ def reconcile(c: Ctx) -> bool:
 # -- ready -------------------------------------------------------------------
 
 
+def sanitise(text: str, limit: int = FIELD_LIMIT) -> str:
+    """Plan text is DATA: control, format and line/paragraph separator
+    characters become `?`, and text over `limit` code points is cut to one
+    fewer plus `…`, so a value cannot forge or hide an output line (02 §1.4)."""
+    clean = "".join("?" if unicodedata.category(ch) in UNSAFE_CATEGORIES else ch for ch in text)
+    return clean[:limit - 1] + "…" if len(clean) > limit else clean
+
+
+def flag_removal(text: str, t: Task) -> tuple[str, str] | None:
+    """(name, remove_by) when the task carries `- flag: remove`, else None.
+    Every raw line is scanned, not only the first bullet of each key, so a
+    second `- flag:` line cannot hide a remove task from the hold (04 R-01)."""
+    name = date = None
+    for line in text[t.start:t.end].splitlines()[1:]:
+        if name is None and (m := FLAG_REMOVE.match(line)):
+            name = m.group(1) or "?"
+        elif date is None and (m := REMOVE_BY.match(line)):
+            date = m.group(1) or "?"
+    return None if name is None else (name, date or "?")
+
+
 def cmd_ready(argv: list[str]) -> int:
-    args, opts = split_opts(argv, ("--max",))
+    args, opts = split_opts(argv, ("--max",), flags=("--removal",))
     if len(args) != 1:
-        raise Refused("usage: build-ready <feature-dir> [--max N]")
+        raise Refused("usage: build-ready <feature-dir> [--max N] [--removal]")
     c = context(args[0])
     text = c.plan.read_text()
     ts = tasks(text)
@@ -573,6 +600,13 @@ def cmd_ready(argv: list[str]) -> int:
     limit = max(1, want) if mode == "enforce" else 1
     done = {t.tid for t in ts if t.state == "x"}
     ready = [t for t in ts if t.state == " " and all(d in done for d in t.depends)]
+    held: list[tuple[Task, tuple[str, str]]] = []
+    if "--removal" not in opts:
+        for t in ready:
+            if (flag := flag_removal(text, t)) is not None:
+                held.append((t, flag))
+        held_ids = {t.tid for t, _ in held}
+        ready = [t for t in ready if t.tid not in held_ids]
     picked: list[Task] = []
     for t in sorted(ready, key=lambda t: int(t.tid[2:])):
         if len(picked) < limit and not any(overlaps(t.files, p.files) for p in picked):
@@ -584,6 +618,8 @@ def cmd_ready(argv: list[str]) -> int:
     deferred = [t.tid for t in ready if t not in picked]
     if deferred:
         print(f"ready but deferred: {', '.join(deferred)}")
+    for t, (name, date) in held:
+        print(f"held for rollout: {t.tid} (flag {sanitise(name)}, remove by {sanitise(date)})")
     if not picked:
         print("no ready tasks")
     return 0
