@@ -263,6 +263,17 @@ and the task is marked `[~] owner=<user> session=<id> started=<ts> worktree=<pat
 Parallel or unattended runs require guard enforce mode; otherwise build runs
 attended and one task at a time.
 
+**Flag remove tasks are held.** A task carrying `- flag: remove <name>` is
+never ready by default, even when its dependencies are `[x]`: removing a flag
+comes after its rollout, usually after delivery. `build-ready` leaves it out
+and prints `held for rollout: T-nn (flag <name>, remove by <date>)`; it stays
+`[ ]`, is not blocked and never stops the build. The operator runs
+`/delivery:build <feature> --remove-flags` once the rollout is finished, which
+passes `--removal` to `build-ready` and offers those tasks like any other.
+`save` may set 05 `complete`, and `save --handover` delivers, with held remove
+tasks still `[ ]`; the handover manifest lists each with its client-side owner
+and date.
+
 **Integrate — one task at a time, in task-ID order**
 1. The builder has made one WIP commit on its branch.
 2. **Scope check:** `git diff --name-only` against HEAD ⊆ the task's `files`.
@@ -295,9 +306,14 @@ All files: `format: delivery-plan/1`, `feature`, `step`, `status`, `date`,
 | Step | Extra keys |
 |---|---|
 | 01 | `tier`, `ai_use` |
-| 02 | `tier`, `personal_data`, `calls_model`, `has_ui` |
+| 02 | `tier`, `personal_data`, `calls_model`, `has_ui`; optional `flagged` |
 | 04 | `classification` |
-| 05 | `branch`, `base`, `verify_allowed: [ ... ]` |
+| 05 | `branch`, `base`, `verify_allowed: [ ... ]`; optional `flagged` |
+
+`flagged` is `true` or `false`; absent means `false`. It marks a feature that
+ships behind one or more feature flags. 05 carries it too, copied from 02, so a
+tier S plan with no 02 can be flagged; where both carry it the values must
+agree.
 
 `status` ∈ `draft · approved · reviewed · complete · as-built · superseded`.
 
@@ -357,10 +373,39 @@ manual`. A `## Queries sent` section lists every query.
 `depends: none` when empty. `evidence` is written **only** by `run-verify`; no commit SHA — the commit is found by its `T-07` message.
 `[~]` lines carry `owner`, `session`, `started`, `worktree`; `[!]` lines a reason.
 
+In a `flagged` plan, each flag adds bullets to three kinds of task:
+
+```
+### T-02 [x] Add flag new-search, off by default
+- flag: add new-search
+
+### T-04 [ ] Search behind new-search
+- flag on: the new search endpoint returns results
+- flag off: the old search answers and the new endpoint returns 404
+
+### T-06 [ ] Remove flag new-search
+- flag: remove new-search
+- flag_owner: client platform lead
+- remove_by: 2027-01-31
+```
+
+- **Add task:** `- flag: add <name>`. **Remove task:** `- flag: remove <name>`,
+  `- flag_owner: <role>`, `- remove_by: YYYY-MM-DD`. `<name>` matches
+  `^[a-z0-9][a-z0-9._-]{0,62}$`; `flag_owner` is a client-side role, not a
+  person, and is a separate key from `owner`.
+- **Guarded task** — any task that depends on the add task and is not a remove
+  task: `- flag on: <check>` and `- flag off: <check>`, each saying what is
+  observed with the flag in that state. A task guarded by two flags carries
+  one pair that covers both.
+- Each key appears at most once per task, and a task carries at most one
+  `- flag:` bullet. A plan may hold several flags, each with exactly one add
+  and one remove task.
+
 ### 5.6 What `check-plan.py` enforces
 
 Interface: `check-plan.py <feature-dir> | --all [--hook PATH]`. Exit 1 on any
-failure; `--hook` is silent on pass.
+failure; `--hook` is silent on pass. Report mode:
+`check-plan.py --flags <feature-dir> | --flags --all [--today YYYY-MM-DD]`.
 
 - Grammar above: front-matter keys per step, `format` version, `status` vocabulary, ID patterns, table separators.
 - 01 has non-empty `## Data handled` and `## Client constraints` sections; `none stated` counts as an answer.
@@ -370,6 +415,37 @@ failure; `--hook` is silent on pass.
 - Every `verify` matches `verify_allowed` and contains no shell metacharacters `; | & $ \` > <`.
 - Every 🔄/⛔ source is on the allowlist; every recorded query is clear of the engagement deny-list.
 - Every `[!]` has a reason; every `[~]` has an owner.
+- **`flag-plan`** (§5.5 flag bullets), read from each task's raw lines so a
+  hidden second line or an `owner` sub-field cannot slip past:
+  - no flag key repeated in a task or passed as an `owner` sub-field; the
+    `flag` verb is `add` or `remove` and the name matches its pattern;
+  - a `flagged` plan has at least one flag task; each name has exactly one add
+    and one remove task; `flag_owner` and `remove_by` appear only on remove
+    tasks, which must carry both, with `remove_by` a real `YYYY-MM-DD` date;
+  - per flag, every other task is a prerequisite of the add task or depends on
+    it, and the remove task depends on every task that is not a remove task;
+  - every guarded task carries `flag on` and `flag off`;
+  - no flag bullet in an unflagged plan; 02 and 05 agree on `flagged`.
+
+  A `remove_by` in the past never fails the rule; overdue is reported, not
+  enforced, so a plan does not start failing the hook because a day passed.
+- **`--flags` report** (read-only): runs every check above on each folder
+  first; a failing folder prints `<feature>: plan fails check-plan.py; flags
+  not reported`. Otherwise one line per flag,
+  `<feature>: flag <name> · added <state> · owner <role> · remove by <date> · <status>`,
+  where `<status>` is the first of `removed` (both tasks `[x]`),
+  `inconsistent` (remove `[x]`, add not), `overdue` (remove not `[x]` and its
+  date passed) or `live`, with ` · beyond a year` appended when `remove_by` is
+  more than 365 days after 05's `date`. A folder with no flags prints
+  `<feature>: no flags`. Exit 0 when every folder reported, 1 when any failed
+  its checks, 2 on a usage error (a bad `--today`, an unknown option, or
+  `--flags` with `--hook`).
+- **Output sanitising:** every printed line is built from untrusted plan text,
+  so each failure line and each `--flags` line is sanitised in one place:
+  Unicode `Cc`, `Cf`, `Zl` and `Zp` characters (newline, ESC, U+202E) become
+  `?`, so a value cannot forge a second `file:line: [rule]` line; a message is
+  capped at 300 code points, ending `…`; in `--flags`, owners and dates are
+  capped at 80 each.
 - Negative tests for each rule; this plan folder is a CI fixture that must pass.
 
 ## 6. Web search (optional): AWS Bedrock AgentCore Web Search

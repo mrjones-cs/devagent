@@ -5,6 +5,55 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+**Feature flags in the delivery workflow.** A feature can now be planned to
+ship behind a flag, with the flag's removal planned from the start. DevAgent
+ships no flag runtime and integrates with no flag vendor; the client's own
+flag system stays in charge. See "Feature flags" in `docs/CUSTOMIZING.md`.
+
+- **Grammar.** 02 and 05 take an optional `flagged: true` front-matter key
+  (absent means `false`, so existing plans are unchanged). In a flagged 05 the
+  add task carries `- flag: add <name>`, every task it guards carries
+  `- flag on:` and `- flag off:` checks, and the remove task carries
+  `- flag: remove <name>`, `- flag_owner: <role>` and `- remove_by:
+  YYYY-MM-DD`. The `02-design.md` and `05-implementation.md` templates show
+  them.
+- **`check-plan.py` rule `flag-plan`.** Each flag has exactly one add and one
+  remove task; the remove task has a client-side owner role and a real date;
+  every other task is ordered against the add task, and the remove task comes
+  after all feature work; every guarded task carries both checks. Flag keys
+  are read from raw lines, so a repeated key or one hidden as an `owner`
+  sub-field fails. A date in the past never fails the rule.
+- **`check-plan.py --flags`** is a read-only report: one line per flag with
+  its add state, owner, removal date and status (`live`, `overdue`,
+  `removed` or `inconsistent`, plus `beyond a year` for a date more than a
+  year out), `--all` across every plan, and `--today` for tests. A plan that
+  fails its checks reports no flags and exits 1.
+- **Build holds flag remove tasks.** `build-ready` leaves them out and prints
+  `held for rollout: T-nn (flag <name>, remove by <date>)`.
+  **`/delivery:build <feature> --remove-flags`** runs them once the rollout is
+  finished. `save` reports the `--flags` lines in every mode; a 05 may be
+  `complete`, and `save --handover` may deliver, with held remove tasks still
+  open, and the handover manifest lists every flag not removed with its
+  client-side owner, its date and the statement that the client owns removal.
+- **Sanitised output.** Every line `check-plan.py` prints, and `build-ready`'s
+  held line, is built from untrusted plan text, so Unicode control, format and
+  line-separator characters (newline, ESC, U+202E) now print as `?` and a
+  message is capped at 300 code points. Existing failure messages are
+  otherwise unchanged.
+- **New skill `devagent-standards:feature-flags`**, with its resident stub in
+  `templates/CLAUDE.md`: default off, an owner and removal date for every
+  flag, server-side evaluation for anything security-relevant, flagged-off
+  code still ships, who may flip a flag, security controls never flag-gated,
+  a kill switch for model calls, fail-safe defaults, gradual rollout, and
+  hosted flag services treated as vendors. `engagement-closeout` lists live
+  flags in the handover. If you keep your own copy of the resident rules, add
+  the stub there too.
+- **`scripts/check-all.sh`** runs `check-skills.py`, `check-plan.py` on the
+  shipped example and every `scripts/test-*.sh` suite except the live smoke
+  test, prints one line per suite with its exit code and time, and exits
+  non-zero if any failed. It is the whole-repository gate before a push; each
+  task's own verify stays the fast loop.
+
 Fixes from a prompt audit of every file the model reads.
 
 - **Requirements analyst** no longer tells itself to ask the operator questions
