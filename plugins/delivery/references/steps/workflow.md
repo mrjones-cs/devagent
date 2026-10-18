@@ -17,7 +17,9 @@ matter: `format: delivery-plan/1`, `feature`, `step: 05-implementation`,
 plan files that exist), **`branch`** (the branch build will run on, normally
 the current one), **`base`** (the current HEAD commit) and
 **`verify_allowed`** - the distinct verify commands of every task, which
-build shows the operator for approval before it runs any.
+build shows the operator for approval before it runs any - and **`flagged`**,
+copied from 02 (absent in 02 means `false`). A tier S plan has no 02: set
+`flagged: true` in 05 when the intent says the feature ships behind a flag.
 
 ## Refuses while
 
@@ -64,11 +66,50 @@ path the task may touch - build's scope check enforces it), an observable
   on new and changed code, as a quality gate.
 - No `evidence` lines: only `run-verify` writes them.
 
+## Flagged plans
+
+When `flagged` is true, invoke `devagent-standards:feature-flags` first, then
+plan each flag 02 names as three kinds of task. The `check-plan.py` rule
+`flag-plan` enforces this shape:
+
+- **The add task comes first.** `- flag: add <name>`, with acceptance that
+  the flag exists and is **off by default**. Only setup the add task needs,
+  such as adding the check command, may come before it. Every other task,
+  apart from add and remove tasks, depends on it, directly or through
+  another task; none runs unordered against the flag.
+- **Every guarded task** - every task that depends on the add task, other
+  than a remove task - carries two non-empty bullets saying what is observed
+  in each state:
+  - `- flag on: <check>`;
+  - `- flag off: <check>`.
+
+  A task guarded by two flags carries one pair, written to cover both.
+- **The remove task comes last** and depends on every task that is not a
+  remove task; remove tasks of different flags need no order between them.
+  It carries `- flag: remove <name>`, `- flag_owner: <role>` and
+  `- remove_by: YYYY-MM-DD`; its acceptance is that the flag and its dead
+  branch are gone.
+  - **`flag_owner` is a role, never a person** ("client platform lead").
+    Removal usually happens after delivery, so it is a role on the client
+    side. Ask the operator for it; never guess it.
+  - **`remove_by`** is a real date, normally within a year of the plan date;
+    `check-plan.py --flags` marks one beyond a year.
+  - `build` holds the remove task until the operator runs
+    `/delivery:build <feature> --remove-flags` after rollout.
+
+A task carries at most one `- flag:` bullet, and each of these keys at most
+once, on its own line - never as an ` · ` part of an `owner` line. Flag names
+never carry a client or customer name or identifier.
+
+Add a quality gate to the plan: **each guarded task's verify exercises both
+flag states**, so the `flag on` and `flag off` checks are proven, not only
+stated.
+
 ## Standards
 
 `devagent-standards:verification-methods` - each verify proves the thing that
 ships, not the source that produced it. TESTING STANDARDS sets the coverage
-gate.
+gate. `devagent-standards:feature-flags` when the plan is flagged.
 
 ## Stop for
 
@@ -77,10 +118,12 @@ gate.
   tier trigger: propose moving up a tier instead.
 - Any verify command that cannot be written without shell operators: ask the
   operator for a script or target that wraps it.
+- A flagged plan whose remove task has no client-side `flag_owner` role or no
+  `remove_by` date from the operator: ask; do not invent either.
 
 ## Finish
 
 Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check-plan.py docs/plans/<feature>`
 and fix every finding in 05. Report: the number of tasks and phases, the
-distinct `verify_allowed` commands, `branch` and `base`, the `check-plan.py`
+distinct `verify_allowed` commands, each flag with its add and remove task, `branch` and `base`, the `check-plan.py`
 result, and the next step (`/delivery:build <feature>`).

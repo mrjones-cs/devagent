@@ -10,6 +10,7 @@ tier: M
 personal_data: false
 calls_model: false
 has_ui: false
+flagged: false
 ---
 
 # Design: Sample feature

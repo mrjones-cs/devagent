@@ -10,6 +10,7 @@ tier: {{tier}}
 personal_data: {{true_or_false}}
 calls_model: {{true_or_false}}
 has_ui: {{true_or_false}}
+flagged: {{true_or_false}}
 ---
 
 # Design: {{feature_title}}

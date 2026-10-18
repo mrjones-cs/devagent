@@ -8,6 +8,7 @@ date: {{YYYY-MM-DD}}
 reads: 01-requirements.md, 02-design.md, 03-research.md, 04-review.md
 branch: {{branch}}
 base: {{base_commit}}
+flagged: {{true_or_false}}
 verify_allowed:
   - {{verify_command}}
 # manual_evidence: [T-01]   # optional: tasks whose evidence was written by hand
@@ -32,7 +33,14 @@ verify_allowed:
 
 ## Phase 1 — {{phase_name}}
 <!-- One block per task, in exactly this grammar. depends is "none" or "T-nn, T-nn". timeout is <n>s, <n>m or <n>h.
-     Add evidence only when the task is [x], and only via run-verify. -->
+     Add evidence only when the task is [x], and only via run-verify.
+     When flagged is true, each flag adds these bullets to task blocks, each key once per task:
+       the add task, first:        - flag: add <name>
+       every task depending on it: - flag on: <what is observed with the flag on>
+                                   - flag off: <what is observed with the flag off>
+       the remove task, last:      - flag: remove <name>
+                                   - flag_owner: <client-side role, not a person>
+                                   - remove_by: YYYY-MM-DD -->
 
 ### T-01 [ ] {{task_title}}
 - depends: none
