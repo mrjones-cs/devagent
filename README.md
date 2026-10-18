@@ -180,6 +180,7 @@ docs/                          DESIGN (normative), ARCHITECTURE, CUSTOMIZING
 Everything runs in seconds, needs no network, and runs in CI on every push:
 
 ```bash
+bash scripts/check-all.sh              # all of the below in sequence, one line per suite (~80s)
 python3 scripts/check-skills.py        # structure, cross-references, stubs, prose figures, pins
 bash scripts/test-check-skills.sh      # the checker's own negative tests
 bash scripts/test-install.sh           # installer, against a throwaway HOME

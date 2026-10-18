@@ -146,7 +146,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 - timeout: 10m
 - evidence: run-verify · exit 0 · tests 14 · 0.1s · log evidence/T-07.log sha256:ea37ed757d8bf70f5414f72d796019f5fc6a394a5c0109d43aa3e77419a51dd9 · 2026-10-18
 
-### T-08 [ ] `scripts/check-all.sh` and the whole-repository gate
+### T-08 [x] `scripts/check-all.sh` and the whole-repository gate
 - depends: T-01, T-02, T-03, T-04, T-05, T-06, T-07
 - files: scripts/check-all.sh, README.md
 - acceptance:
@@ -157,3 +157,4 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
   - The run passes with every suite green (AC-6). CI confirms it again on the first push of the integrated branch, which build does not do
 - verify: `bash scripts/check-all.sh`
 - timeout: 15m
+- evidence: run-verify · exit 0 · tests 12 · 80.0s · log evidence/T-08.log sha256:18806c4a65c62c8ebc2ab60ad1d2035b1075950b055c180edca2ecc7b8da12d7 · 2026-10-18
