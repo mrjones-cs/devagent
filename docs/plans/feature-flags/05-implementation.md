@@ -132,7 +132,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 
 ## Phase 4 — Records and gate
 
-### T-07 [ ] DESIGN grammar and CHANGELOG
+### T-07 [x] DESIGN grammar and CHANGELOG
 - depends: T-06
 - files: docs/DESIGN.md, CHANGELOG.md
 - acceptance:
@@ -144,6 +144,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
   - `check-skills.py` is clean
 - verify: `python3 scripts/check-skills.py`
 - timeout: 10m
+- evidence: run-verify · exit 0 · tests 14 · 0.1s · log evidence/T-07.log sha256:ea37ed757d8bf70f5414f72d796019f5fc6a394a5c0109d43aa3e77419a51dd9 · 2026-10-18
 
 ### T-08 [ ] `scripts/check-all.sh` and the whole-repository gate
 - depends: T-01, T-02, T-03, T-04, T-05, T-06, T-07

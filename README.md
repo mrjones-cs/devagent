@@ -104,6 +104,10 @@ then a short plan and build); new systems use tier **L** (every step, an
 eight-lens review). [examples/guard-report/](examples/guard-report/) is a
 complete real run, including a build killed mid-task and resumed.
 
+A feature can ship behind a feature flag in your own flag system, with its
+removal planned from the start and held until the rollout is done: see
+[Feature flags](docs/CUSTOMIZING.md#9-feature-flags) in CUSTOMIZING.
+
 ## What the guard does
 
 `devagent-guard` runs on every tool call. In the default **enforce** mode each

@@ -92,3 +92,85 @@ contributing upstream the ones that would help anyone.
 
 Optional; see the README and `infra/terraform/web-search/`. Without it,
 research confirms facts on official pages directly.
+
+## 9. Feature flags
+
+The delivery workflow can plan a feature that ships behind a flag, and plan
+the flag's removal from the start.
+
+**DevAgent ships no flag runtime and integrates with no flag vendor.** Your
+own flag system stays in charge: a vendor SDK, a parameter store, or a config
+file in the client's code. DevAgent adds a planning convention, a checker rule,
+a report, a build hold and a standard; nothing it adds runs in the system you
+deliver.
+
+**In the design.** The design step (run by `/delivery:plan`) sets
+`flagged: true` in `02-design.md` when the feature ships behind a flag, and names the flag system
+and the flag with its rollout. The `devagent-standards:feature-flags` skill
+sets the rules for using it: default off, an owner and a removal date for every
+flag, server-side evaluation for anything security-relevant, security controls
+never flag-gated, and a hosted flag service treated as a vendor.
+
+**In the plan.** The workflow step copies `flagged` into
+`05-implementation.md` and writes three kinds of task for each flag:
+
+- the **add task**, first: it wires the flag into your flag system, **off by
+  default**;
+- every **guarded task** (each task that depends on the add task) carries
+  `- flag on:` and `- flag off:`, saying what is observed in each state, and
+  its verify exercises both;
+- the **remove task**, last: it deletes the flag and the code path it
+  retired, and names a client-side owner role (`flag_owner`, a role, not a
+  person) and a date (`remove_by`).
+
+An add and remove pair in the 05 grammar:
+
+```
+### T-02 [ ] Add flag new-search, off by default
+- depends: T-01
+- flag: add new-search
+- files: src/flags.py
+- acceptance: the flag exists and is off by default
+- verify: `npm test -- flags`
+- timeout: 5m
+
+### T-03 [ ] Search behind new-search
+- depends: T-02
+- files: src/search.ts, test/search.test.ts
+- acceptance: the new search answers when the flag is on
+- flag on: the new search endpoint returns results
+- flag off: the old search answers and the new endpoint returns 404
+- verify: `npm test -- search`
+- timeout: 10m
+
+### T-04 [ ] Remove flag new-search
+- depends: T-01, T-02, T-03
+- flag: remove new-search
+- flag_owner: client platform lead
+- remove_by: 2027-01-31
+- files: src/flags.py, src/search.ts, test/search.test.ts
+- acceptance: the old search path and the flag are gone
+- verify: `npm test -- search`
+- timeout: 10m
+```
+
+`check-plan.py` (rule `flag-plan`) fails a flagged plan with no flag task, a
+flag without exactly one add and one remove task, a remove task with no owner
+or no real date, a task not ordered against the add task, a remove task that
+does not come after the feature work, or a guarded task missing either check.
+A date in the past never fails it.
+
+**Checking flags.** `python3 plugins/delivery/scripts/check-plan.py --flags
+docs/plans/<feature>` (or `--flags --all`) prints one line per flag with its
+owner, removal date and status: `live`, `overdue`, `removed` or
+`inconsistent`, and `beyond a year` when the date is more than a year after
+the plan.
+
+**Building.** `/delivery:build <feature>` builds everything except remove
+tasks, which it holds and lists as `held for rollout`. Once the rollout is
+finished, `/delivery:build <feature> --remove-flags` runs them.
+
+**At handover.** A remove task may still be open at delivery.
+`/delivery:save <feature> --handover` lists every flag not yet removed in the
+handover manifest, with its client-side owner and removal date, and states
+that the client owns removing it after delivery.
