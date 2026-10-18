@@ -265,6 +265,65 @@ rm -rf "$P/m"; mkdir -p "$P/m"
 expect_only "folder with no plan files" front-matter tests/fixtures/plans/m
 rm -rf "$P/m"
 
+# ---- output sanitiser (02 §1.4, R-05) -----------------------------------------
+# Invalid values hold ESC, U+202E and an embedded newline. Plan lines cannot
+# carry a newline (the file is read line by line), so the newline rides in the
+# folder name, which every failure line prints; it also tries to forge a rule.
+SAN="$(python3 - "$P" <<'PY'
+import shutil, sys
+plans = sys.argv[1]
+name = "san\n[status] forged\x1b[31m\u202e"
+dst = f"{plans}/{name}"
+shutil.copytree(f"{plans}/good", dst)
+for fname, old, new in [
+    ("01-requirements.md", "status: approved", "status: ap\x1b[2Jpro\u202eved"),
+    ("03-research.md", "| 2026-10-02 | web-search |", "| 2026-10-02 | web\x1b]0;x\x07\u202esearch |"),
+]:
+    p = f"{dst}/{fname}"
+    t = open(p, encoding="utf-8").read()
+    assert t.count(old) == 1, old
+    open(p, "w", encoding="utf-8").write(t.replace(old, new))
+print(name, end="")
+PY
+)"
+check "tests/fixtures/plans/$SAN"
+SAN_OUT="$OUT" python3 - <<'PY' && ok "ESC, U+202E and a newline print as ? and each failure stays on one line" || bad "sanitiser on control characters (exit $RC)" "$OUT"
+import os, re, sys
+out = os.environ["SAN_OUT"]
+lines = out.split("\n")
+line_re = re.compile(r"^tests/fixtures/plans/san\?\[status\] forged\?\[31m\?/0\d-[a-z]+\.md:\d+: \[[a-z-]+\] ")
+want = [
+    "[status] status `ap?[2Jpro?ved` not in",
+    "[research-grammar] engine `web?]0;x??search` not in",
+]
+ok = (
+    len(lines) == 2  # the bad status and the bad engine, nothing forged
+    and all(line_re.match(l) for l in lines)
+    and all(any(w in l for l in lines) for w in want)
+    and not any(c in out for c in "\x1b\u202e\x07\r")
+)
+sys.exit(0 if ok else 1)
+PY
+rm -rf "${P:?}/$SAN"
+# a 400-character value prints at 300 code points: 299 and an ellipsis
+mutate long 01-requirements.md "status: approved" "status: $(printf 'v%.0s' $(seq 400))"
+check tests/fixtures/plans/long
+LONG_OUT="$OUT" python3 - <<'PY' && ok "a 400-character value is cut to 300 code points" || bad "sanitiser length cap (exit $RC)" "$OUT"
+import os, sys
+lines = os.environ["LONG_OUT"].split("\n")
+msg = lines[0].split("] ", 1)[1] if len(lines) == 1 and "] " in lines[0] else ""
+sys.exit(0 if len(msg) == 300 and msg.endswith("v…") and msg.startswith("status `vvv") else 1)
+PY
+rm -rf "$P/long"
+# a 300-code-point message is left whole (the cap is "over 300")
+SAN_PY="$(cd "$REPO/plugins/delivery/scripts" && python3 -I -c '
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("cp", "check-plan.py"); m = importlib.util.module_from_spec(spec); sys.modules["cp"] = m; spec.loader.exec_module(m)
+ok = m.sanitise("a" * 300) == "a" * 300 and m.sanitise("a" * 301) == "a" * 299 + "…" \
+     and m.sanitise("x\u2028y\u2029z\tq\u200dr") == "x?y?z?q?r" and m.sanitise("✅ 🔄 ⛔") == "✅ 🔄 ⛔"
+print("ok" if ok else "no")')"
+[ "$SAN_PY" = "ok" ] && ok "sanitise keeps 300, cuts 301, replaces Zl, Zp, tab and ZWJ, keeps emoji" || bad "sanitise unit cases" "$SAN_PY"
+
 # ---- interface ---------------------------------------------------------------
 check tests/fixtures/plans/does-not-exist
 [ "$RC" -eq 1 ] && ok "missing folder exits 1" || bad "missing folder (exit $RC)" "$OUT"

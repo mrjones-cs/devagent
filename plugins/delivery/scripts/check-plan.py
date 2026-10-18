@@ -19,6 +19,10 @@ model; a pass, or a path outside docs/plans/, prints nothing and exits 0.
 
 Plan files are untrusted data. Nothing read from them is executed: the only
 subprocess is `git log`, with task file paths passed as pathspecs after `--`.
+Every printed line passes `sanitise` (02 section 1.4 of the feature-flags plan):
+control, format and line/paragraph-separator characters become `?`, and a
+message is capped at 300 code points, so plan text cannot forge a second
+`file:line: [rule]` line or reach the terminal as an escape sequence.
 
 Python 3.11+ standard library only.
 """
@@ -30,6 +34,7 @@ import hashlib
 import re
 import subprocess
 import sys
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -73,6 +78,8 @@ ENGINES = frozenset({"web-search", "official-page", "manual"})
 TASK_FIELDS = ("depends", "files", "acceptance", "verify", "timeout")
 IN_PROGRESS_FIELDS = ("owner", "session", "started", "worktree")
 DENY_LIST = Path(".delivery") / "deny-list"
+UNSAFE_CATEGORIES = frozenset({"Cc", "Cf", "Zl", "Zp"})
+MESSAGE_LIMIT = 300  # code points
 
 ANY_ID = re.compile(r"\b([AXRCTD])-(\d+)\b")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -102,7 +109,19 @@ class Failure:
     message: str
 
     def render(self) -> str:
-        return f"{display(self.path)}:{self.line}: [{self.rule}] {self.message}"
+        return f"{sanitise(display(self.path))}:{self.line}: [{self.rule}] {sanitise(self.message)}"
+
+
+def sanitise(text: str) -> str:
+    """Make untrusted text safe to print as part of one output line.
+
+    Unicode Cc, Cf, Zl and Zp characters (newline, ESC, U+202E and the like)
+    become `?`; text over MESSAGE_LIMIT code points is cut to one fewer plus `…`.
+    """
+    clean = "".join("?" if unicodedata.category(ch) in UNSAFE_CATEGORIES else ch for ch in text)
+    if len(clean) > MESSAGE_LIMIT:
+        clean = clean[: MESSAGE_LIMIT - 1] + "…"
+    return clean
 
 
 def display(path: Path) -> str:
@@ -751,13 +770,13 @@ def main(argv: list[str] | None = None) -> int:
         root = find_root(Path.cwd().resolve()) or Path.cwd()
         plans = root / "docs" / "plans"
         if not plans.is_dir():
-            print(f"{display(plans)}:0: [front-matter] no docs/plans/ folder")
+            print(Failure("front-matter", plans, 0, "no docs/plans/ folder").render())
             return 1
         folders = sorted(p for p in plans.iterdir() if p.is_dir() and not p.name.startswith("."))
     else:
         folders = [Path(args.folder)]
         if not folders[0].is_dir():
-            print(f"{args.folder}:0: [front-matter] not a folder")
+            print(f"{sanitise(args.folder)}:0: [front-matter] not a folder")
             return 1
     failures = [f for folder in folders for f in Checker(folder).run()]
     for f in failures:

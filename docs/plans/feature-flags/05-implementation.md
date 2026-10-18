@@ -52,13 +52,13 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 
 ## Phase 1 — Checker
 
-### T-01 [~] Central output sanitiser
-- owner: 7598406+mrjones-cs@users.noreply.github.com · session: 8ae5e9f7-f122-4bd7-8caa-a1f7af614ecd · started: 2026-10-17T23:57:00Z · worktree: /Users/mattjones/ClaudeCodeProjects/devagent/.git/delivery-worktrees/feature-flags/T-01
+### T-01 [x] Central output sanitiser
 - depends: none
 - files: plugins/delivery/scripts/check-plan.py, scripts/test-check-plan.sh
 - acceptance: one sanitiser in `check-plan.py` replaces Unicode `Cc`, `Cf`, `Zl` and `Zp` characters with `?`, and cuts any message over 300 code points to 299 plus `…`. `Failure.render` uses it for every line. A test-generated fixture whose invalid values hold ESC, U+202E and an embedded newline prints each failure on exactly one line, with `?` in place of each of those characters. A 400-character value prints at 300 code points. Every existing fixture's output is unchanged (02 §1.4, R-05)
 - verify: `bash scripts/test-check-plan.sh`
 - timeout: 10m
+- evidence: run-verify · exit 0 · tests 92 · 9.8s · log evidence/T-01.log sha256:86ba249110a6e6de97208d410be7a7086d9a8992c515dec67a9390e85736776b · 2026-10-17
 
 ### T-02 [ ] Rule `flag-plan` and its fixtures
 - depends: T-01
