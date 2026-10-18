@@ -1,0 +1,16 @@
+$ bash scripts/check-all.sh
+[run-verify] task T-08 · exit 0 · 80.0s
+
+ok   check-skills.py                        exit 0   1s
+ok   check-plan.py examples/guard-report    exit 0   0s
+ok   test-build-protocol.sh                 exit 0   18s
+ok   test-check-plan.sh                     exit 0   17s
+ok   test-check-skills.sh                   exit 0   6s
+ok   test-delivery-hooks.sh                 exit 0   2s
+ok   test-forbidden-terms.sh                exit 0   3s
+ok   test-guard-report.sh                   exit 0   6s
+ok   test-hooks.sh                          exit 0   12s
+ok   test-install.sh                        exit 0   8s
+ok   test-run-verify.sh                     exit 0   2s
+ok   test-web-search.sh                     exit 0   5s
+total: 12 passed, 0 failed, 80s
