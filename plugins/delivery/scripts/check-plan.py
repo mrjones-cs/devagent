@@ -6,6 +6,8 @@
     check-plan.py --hook PATH            PostToolUse mode: silent unless PATH is
                                          inside docs/plans/<feature>/ and that
                                          folder fails
+    check-plan.py --flags <feature-dir> | --flags --all [--today YYYY-MM-DD]
+                                         report each feature flag (read-only)
 
 The grammar and the rule list are normative in docs/plans/delivery/02-design.md
 section 5 (sections 5.1 to 5.6), plus rule `flag-plan` from
@@ -17,6 +19,16 @@ Output: one line per failure, `file:line: [rule] message`. Exit 0 when clean,
 1 on any failure. In --hook mode a failure prints the same lines to stderr and
 exits 2, which is how a Claude Code PostToolUse hook hands text back to the
 model; a pass, or a path outside docs/plans/, prints nothing and exits 0.
+
+--flags (feature-flags 02 section 1.3) runs every check on each folder first.
+A failing folder prints `<feature>: plan fails check-plan.py; flags not
+reported`; a passing one prints one line per flag,
+`<feature>: flag <name> · added <state> · owner <role> · remove by <date> ·
+<status>[ · beyond a year]`, or `<feature>: no flags`. <status> is the first of
+removed · inconsistent · overdue · live that applies; `--today` fixes the report
+date (default: the local date). Exit 0 when every folder reported, 1 when any
+failed its checks, 2 on a usage error (bad --today, unknown option, --flags with
+--hook).
 
 Plan files are untrusted data. Nothing read from them is executed: the only
 subprocess is `git log`, with task file paths passed as pathspecs after `--`.
@@ -82,6 +94,7 @@ IN_PROGRESS_FIELDS = ("owner", "session", "started", "worktree")
 DENY_LIST = Path(".delivery") / "deny-list"
 UNSAFE_CATEGORIES = frozenset({"Cc", "Cf", "Zl", "Zp"})
 MESSAGE_LIMIT = 300  # code points
+FIELD_LIMIT = 80  # code points, for each owner and date in the --flags report
 # Feature flags (feature-flags 02 §1.1, §1.2): keys read from raw task lines.
 FLAG_KEYS = ("flag", "flag_owner", "remove_by", "flag on", "flag off")
 FLAG_VERBS = ("add", "remove")
@@ -118,15 +131,15 @@ class Failure:
         return f"{sanitise(display(self.path))}:{self.line}: [{self.rule}] {sanitise(self.message)}"
 
 
-def sanitise(text: str) -> str:
+def sanitise(text: str, limit: int = MESSAGE_LIMIT) -> str:
     """Make untrusted text safe to print as part of one output line.
 
     Unicode Cc, Cf, Zl and Zp characters (newline, ESC, U+202E and the like)
-    become `?`; text over MESSAGE_LIMIT code points is cut to one fewer plus `…`.
+    become `?`; text over `limit` code points is cut to one fewer plus `…`.
     """
     clean = "".join("?" if unicodedata.category(ch) in UNSAFE_CATEGORIES else ch for ch in text)
-    if len(clean) > MESSAGE_LIMIT:
-        clean = clean[: MESSAGE_LIMIT - 1] + "…"
+    if len(clean) > limit:
+        clean = clean[: limit - 1] + "…"
     return clean
 
 
@@ -913,6 +926,44 @@ def find_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
 # --------------------------------------------------------------------------
 
 
+def flag_report(folder: Path, today: date) -> tuple[list[str], bool]:
+    """The --flags lines for one folder, and whether it passed every check."""
+    feature = sanitise(folder.resolve().name)
+    checker = Checker(folder)
+    if checker.run():
+        return [f"{feature}: plan fails check-plan.py; flags not reported"], False
+    lines: list[str] = []
+    # The folder passed, so flag-plan has already proven the shape: every flag
+    # bullet is unrepeated, each name has exactly one add and one remove task,
+    # and every remove task has a flag_owner and a real remove_by date.
+    for doc in checker.by_step("05-implementation"):
+        written = doc.fm.get("date") if doc.fm else None
+        start = date.fromisoformat(written) if isinstance(written, str) and valid_date(written) else None
+        tasks = {m.group(1): (m.group(2), bullets(block)) for _, m, block in sections(doc, TASK_HEAD)}
+        adds: dict[str, str] = {}
+        removes: dict[str, str] = {}
+        for tid, (_, found) in tasks.items():
+            verb, _, name = found.get("flag", (0, ""))[1].partition(" ")
+            if verb in FLAG_VERBS:
+                (adds if verb == "add" else removes)[name.strip()] = tid
+        for name, a_f in adds.items():
+            add_state = tasks[a_f][0]
+            remove_state, found = tasks[removes[name]]
+            owner = found["flag_owner"][1]
+            remove_by = found["remove_by"][1]
+            due = date.fromisoformat(remove_by)
+            if remove_state == "x":
+                status = "removed" if add_state == "x" else "inconsistent"
+            else:
+                status = "overdue" if due < today else "live"
+            line = (f"{feature}: flag {name} · added [{add_state}] · owner {sanitise(owner, FIELD_LIMIT)} · "
+                    f"remove by {sanitise(remove_by, FIELD_LIMIT)} · {status}")
+            if start is not None and (due - start).days > 365:
+                line += " · beyond a year"
+            lines.append(line)
+    return (lines or [f"{feature}: no flags"]), True
+
+
 def hook_folder(path: str) -> Path | None:
     parts = Path(path).resolve().parts
     for i in range(len(parts) - 2):
@@ -927,7 +978,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("folder", nargs="?", help="a feature folder, e.g. docs/plans/<feature>")
     ap.add_argument("--all", action="store_true", help="check every folder under docs/plans/")
     ap.add_argument("--hook", metavar="PATH", help="PostToolUse mode for an edited file PATH")
+    ap.add_argument("--flags", action="store_true", help="report each feature flag instead of checking")
+    ap.add_argument("--today", metavar="YYYY-MM-DD", help="the --flags report date (default: the local date)")
     args = ap.parse_args(argv)
+
+    if args.flags and args.hook is not None:
+        ap.error("--flags cannot be combined with --hook")
+    if args.today is not None and not args.flags:
+        ap.error("--today needs --flags")
+    today = date.today()
+    if args.today is not None:
+        if not valid_date(args.today):
+            ap.error("--today is not a real YYYY-MM-DD date")
+        today = date.fromisoformat(args.today)
 
     if args.hook is not None:
         folder = hook_folder(args.hook)
@@ -952,6 +1015,14 @@ def main(argv: list[str] | None = None) -> int:
         if not folders[0].is_dir():
             print(f"{sanitise(args.folder)}:0: [front-matter] not a folder")
             return 1
+    if args.flags:
+        passed = True
+        for folder in folders:
+            lines, ok = flag_report(folder, today)
+            passed = passed and ok
+            for line in lines:
+                print(sanitise(line, len(line)))
+        return 0 if passed else 1
     failures = [f for folder in folders for f in Checker(folder).run()]
     for f in failures:
         print(f.render())

@@ -1,0 +1,193 @@
+$ bash scripts/test-check-plan.sh --coverage
+[run-verify] task T-03 · exit 0 · 21.2s
+
+check-plan.py tests
+  [32mPASS[0m good fixture passes with only the clean summary
+  [32mPASS[0m plan generated from the templates passes
+  [32mPASS[0m the design template's own D-1 is a definition the checker accepts
+  [32mPASS[0m bad-duplicate-id
+  [32mPASS[0m bad-dangling-ref
+  [32mPASS[0m bad-depends-cycle
+  [32mPASS[0m bad-evidence
+  [32mPASS[0m bad-evidence-hash
+  [32mPASS[0m bad-evidence-log-missing
+  [32mPASS[0m bad-evidence-zero-tests
+  [32mPASS[0m bad-evidence-manual
+  [32mPASS[0m bad-review-outcome
+  [32mPASS[0m bad-review-outcome-vocabulary
+  [32mPASS[0m bad-applied-change
+  [32mPASS[0m bad-needs-decision
+  [32mPASS[0m bad-verify-allowlist
+  [32mPASS[0m bad-verify-metachar
+  [32mPASS[0m bad-source-allowlist
+  [32mPASS[0m bad-source-allowlist-github
+  [32mPASS[0m bad-deny-list
+  [32mPASS[0m bad-blocked-reason
+  [32mPASS[0m bad-in-progress-owner
+  [32mPASS[0m bad-front-matter
+  [32mPASS[0m bad-status
+  [32mPASS[0m bad-format
+  [32mPASS[0m bad-table-separator
+  [32mPASS[0m bad-id-pattern
+  [32mPASS[0m bad-change-source
+  [32mPASS[0m bad-research-grammar
+  [32mPASS[0m bad-task-grammar
+  [32mPASS[0m bad-review-grammar
+  [32mPASS[0m bad-flag-plan-no-flag-task
+  [32mPASS[0m bad-flag-plan-no-remove
+  [32mPASS[0m bad-flag-plan-two-adds
+  [32mPASS[0m bad-flag-plan-no-owner
+  [32mPASS[0m bad-flag-plan-no-date
+  [32mPASS[0m bad-flag-plan-bad-date
+  [32mPASS[0m bad-flag-plan-basic-date
+  [32mPASS[0m bad-flag-plan-verb
+  [32mPASS[0m bad-flag-plan-name
+  [32mPASS[0m bad-flag-plan-repeated-key
+  [32mPASS[0m bad-flag-plan-owner-subfield
+  [32mPASS[0m bad-flag-plan-field-on-add
+  [32mPASS[0m bad-flag-plan-unordered
+  [32mPASS[0m bad-flag-plan-remove-order
+  [32mPASS[0m bad-flag-plan-no-flag-off
+  [32mPASS[0m bad-flag-plan-unflagged
+  [32mPASS[0m bad-flag-plan-flagged-mismatch
+  [32mPASS[0m good-flagged (two flags, setup task, guarded tasks, open removals) passes
+  [32mPASS[0m examples/guard-report still passes
+  [32mPASS[0m bad-flag-plan-no-flag-task names its condition
+  [32mPASS[0m bad-flag-plan-no-remove names its condition
+  [32mPASS[0m bad-flag-plan-two-adds names its condition
+  [32mPASS[0m bad-flag-plan-no-owner names its condition
+  [32mPASS[0m bad-flag-plan-no-date names its condition
+  [32mPASS[0m bad-flag-plan-bad-date names its condition
+  [32mPASS[0m bad-flag-plan-basic-date names its condition
+  [32mPASS[0m bad-flag-plan-verb names its condition
+  [32mPASS[0m bad-flag-plan-name names its condition
+  [32mPASS[0m bad-flag-plan-repeated-key names its condition
+  [32mPASS[0m bad-flag-plan-owner-subfield names its condition
+  [32mPASS[0m bad-flag-plan-field-on-add names its condition
+  [32mPASS[0m bad-flag-plan-unordered names its condition
+  [32mPASS[0m bad-flag-plan-remove-order names its condition
+  [32mPASS[0m bad-flag-plan-no-flag-off names its condition
+  [32mPASS[0m bad-flag-plan-unflagged names its condition
+  [32mPASS[0m bad-flag-plan-flagged-mismatch names its condition
+  [32mPASS[0m owner sub-field flag_owner is caught too
+  [32mPASS[0m remove-order reports exactly its one missing dependency
+  [32mPASS[0m flagged not true or false
+  [32mPASS[0m flagged value message names the value
+  [32mPASS[0m flagged with an empty value
+  [32mPASS[0m 05 without flagged inherits flagged: true from 02
+  [32mPASS[0m a flagged 05 with no flagged key in 02 passes
+  [32mPASS[0m a flagged plan with no 02 (tier S shape) passes
+  [32mPASS[0m empty flag on
+  [32mPASS[0m a task guarded by two flags is reported once, naming both
+  [32mPASS[0m repeated flag off
+  [32mPASS[0m two remove tasks for one flag
+  [32mPASS[0m two remove tasks are named
+  [32mPASS[0m remove_by on a guarded task
+  [32mPASS[0m empty remove_by
+  [32mPASS[0m flag add with no name
+  [32mPASS[0m a remove task depending on itself is a cycle
+  [32mPASS[0m flag-plan survives a depends cycle
+  [32mPASS[0m a duplicated task ID in a flagged plan
+  [32mPASS[0m flag-plan survives a duplicate task ID
+  [32mPASS[0m flag verb and name with ESC and U+202E print ? on one line
+  [32mPASS[0m flag key hidden in an owner line of an unflagged plan
+  [32mPASS[0m owner sub-field in an unflagged plan is named
+  [32mPASS[0m deny-list output does not echo the term
+  [32mPASS[0m verify with metacharacter ;
+  [32mPASS[0m verify with metacharacter |
+  [32mPASS[0m verify with metacharacter &
+  [32mPASS[0m verify with metacharacter $
+  [32mPASS[0m verify with metacharacter `
+  [32mPASS[0m verify with metacharacter >
+  [32mPASS[0m verify with metacharacter <
+  [32mPASS[0m 03 without a Queries sent section
+  [32mPASS[0m research engine off the vocabulary
+  [32mPASS[0m research Checked not a date
+  [32mPASS[0m research source part neither URL nor live:
+  [32mPASS[0m research table without Engine column
+  [32mPASS[0m ⛔ row with no official URL
+  [32mPASS[0m generator not delivery@<tag>
+  [32mPASS[0m date not YYYY-MM-DD
+  [32mPASS[0m step off the vocabulary
+  [32mPASS[0m step does not match file name
+  [32mPASS[0m 01 without tier
+  [32mPASS[0m 01 without a Data handled section
+  [32mPASS[0m 01 with an empty Client constraints section
+  [32mPASS[0m 04 without reads
+  [32mPASS[0m reads names a missing file
+  [32mPASS[0m file without front matter
+  [32mPASS[0m empty verify_allowed
+  [32mPASS[0m manual_evidence not a list
+  [32mPASS[0m task state off the vocabulary
+  [32mPASS[0m task heading without a state
+  [32mPASS[0m depends not T-nn
+  [32mPASS[0m timeout not <n>s|m|h
+  [32mPASS[0m depends with a one-digit ID
+  [32mPASS[0m evidence not in run-verify form
+  [32mPASS[0m evidence with a non-zero exit
+  [32mPASS[0m evidence log named for another task
+  [32mPASS[0m outcome cites a one-digit change ID
+  [32mPASS[0m needs-decision on an undefined decision
+  [32mPASS[0m change-log source cites an undefined assumption
+  [32mPASS[0m change-log source with a one-digit task ID
+  [32mPASS[0m change log without a Source column
+  [32mPASS[0m same A-nn twice in one research file
+  [32mPASS[0m same A-nn in two research files
+  [32mPASS[0m applied → C-nn with no 02 at all
+  [32mPASS[0m folder with no plan files
+  [32mPASS[0m ESC, U+202E and a newline print as ? and each failure stays on one line
+  [32mPASS[0m a 400-character value is cut to 300 code points
+  [32mPASS[0m sanitise keeps 300, cuts 301, replaces Zl, Zp, tab and ZWJ, keeps emoji
+  [32mPASS[0m missing folder exits 1
+  [32mPASS[0m no arguments is a usage error
+  [32mPASS[0m --hook silent on a passing plan
+  [32mPASS[0m --hook silent on a path outside docs/plans/
+  [32mPASS[0m --hook silent on a file directly in docs/plans/
+  [32mPASS[0m --hook prints the failed rule to stderr, exit 2
+  [32mPASS[0m --all fails when one folder fails
+  [32mPASS[0m --all passes when every folder passes
+  [32mPASS[0m --all with no docs/plans/ exits 1
+  [32mPASS[0m --flags: open flags before their dates are live
+  [32mPASS[0m --flags: remove_by on the report date is still live
+  [32mPASS[0m --flags: a remove_by before the report date is overdue
+  [32mPASS[0m --flags: a trailing slash on the folder still names the feature
+  [32mPASS[0m --flags: a folder with no flags
+  [32mPASS[0m --flags: a folder that fails prints only the not-reported line, exit 1
+  [32mPASS[0m --flags: a failing flag-plan folder is not reported
+  [32mPASS[0m --flags: a missing folder exits 1
+  [32mPASS[0m --flags: remove and add both [x] is removed, even after the date
+  [32mPASS[0m --flags: remove [x] with add not [x] is inconsistent
+  [32mPASS[0m --flags: a [x] remove task with tampered evidence is not reported
+  [32mPASS[0m --flags: remove_by 366 days after the 05 date is beyond a year
+  [32mPASS[0m --flags: overdue and beyond a year together
+  [32mPASS[0m --flags: remove_by exactly 365 days after the 05 date is not beyond a year
+  [32mPASS[0m --flags: an unreal 05 date skips the year check
+  [32mPASS[0m --flags: a blocked add task reports [!] and live
+  [32mPASS[0m --flags: an owner holding ESC and U+202E prints ? on one line
+  [32mPASS[0m --flags: an owner is capped at 80 code points
+  [32mPASS[0m --flags: flag bullets in an unflagged 05 fail the folder
+  [32mPASS[0m --flags --all reports every folder, each line prefixed
+  [32mPASS[0m --flags --all with a failing folder names it, reports the rest, exit 1
+  [32mPASS[0m --flags without --today uses the local date
+  [32mPASS[0m --flags --today 2027-02-30 is a usage error (exit 2)
+  [32mPASS[0m --flags --today 20270131 is a usage error (exit 2)
+  [32mPASS[0m --flags --today 2027-W01-1 is a usage error (exit 2)
+  [32mPASS[0m --flags --today tomorrow is a usage error (exit 2)
+  [32mPASS[0m --flags --bogus is a usage error (exit 2)
+  [32mPASS[0m --flags --hook docs/plans/feature-a/05-implementation.md is a usage error (exit 2)
+  [32mPASS[0m --today without --flags is a usage error
+  [32mPASS[0m --flags with no folder and no --all is a usage error
+  [32mPASS[0m [x] tasks with no T-nn commit fail
+  [32mPASS[0m --hook skips the commit rule (the edit precedes its commit)
+  [32mPASS[0m one T-nn commit per [x] task passes
+  [32mPASS[0m two T-01 commits fail
+  [32mPASS[0m a verification-only task's evidence-only commit counts as its commit
+  [32mPASS[0m a second T-01 commit touching its evidence log still fails
+
+181 passed, 0 failed
+Name                                                                                                                             Stmts   Miss Branch BrPart  Cover   Missing
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+<repo>/plugins/delivery/scripts/check-plan.py     774      9    456     10    98%   191-192, 217->219, 219->221, 264-266, 304->302, 388, 537->524, 600->585, 632->634, 652, 721-722, 1036->exit
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                                                              774      9    456     10    98%
+line coverage 98.8%  branch coverage 97.8%  (gate G-3: >= 80% each)

@@ -68,7 +68,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 - timeout: 15m
 - evidence: run-verify · exit 0 · tests 151 · 14.3s · log evidence/T-02.log sha256:a804fc18f169f9fb1ea09d3e9b04100df1f650af30f5919c3f2992d2cd460dc7 · 2026-10-17
 
-### T-03 [ ] `--flags` report mode and the coverage gate
+### T-03 [x] `--flags` report mode and the coverage gate
 - depends: T-02
 - files: plugins/delivery/scripts/check-plan.py, scripts/test-check-plan.sh, tests/fixtures/plans/good-flagged/
 - acceptance: `check-plan.py --flags <dir>` and `--flags --all [--today YYYY-MM-DD]` print exactly the 02 §1.3 lines. With a fixed `--today`, the tests cover:
@@ -81,6 +81,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
   The `--coverage` run reports ≥ 80% line and branch coverage of `check-plan.py` (AC-4 report part, G-3)
 - verify: `bash scripts/test-check-plan.sh --coverage`
 - timeout: 15m
+- evidence: run-verify · exit 0 · tests 181 · 21.2s · log evidence/T-03.log sha256:4981df86bb3ccb17f19d68345c4b90b558c9dd80fa5e3554dd47fccc5de8358c · 2026-10-17
 
 ## Phase 2 — Build hold and standard
 
