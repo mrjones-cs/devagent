@@ -85,8 +85,9 @@ expect_rule() {
 }
 
 # mutate NEW FILE OLD NEW_TEXT : copy good to $P/NEW and replace OLD (exactly once) in FILE
+# (set BASE=good-flagged to start from the flagged fixture instead)
 mutate() {
-  rm -rf "${P:?}/$1"; cp -R "$P/good" "$P/$1"
+  rm -rf "${P:?}/$1"; cp -R "$P/${BASE:-good}" "$P/$1"
   python3 - "$P/$1/$2" "$3" "$4" <<'PY'
 import sys
 path, old, new = sys.argv[1:]
@@ -152,7 +153,123 @@ bad-change-source change-source
 bad-research-grammar research-grammar
 bad-task-grammar task-grammar
 bad-review-grammar review-grammar
+bad-flag-plan-no-flag-task flag-plan
+bad-flag-plan-no-remove flag-plan
+bad-flag-plan-two-adds flag-plan
+bad-flag-plan-no-owner flag-plan
+bad-flag-plan-no-date flag-plan
+bad-flag-plan-bad-date flag-plan
+bad-flag-plan-basic-date flag-plan
+bad-flag-plan-verb flag-plan
+bad-flag-plan-name flag-plan
+bad-flag-plan-repeated-key flag-plan
+bad-flag-plan-owner-subfield flag-plan
+bad-flag-plan-field-on-add flag-plan
+bad-flag-plan-unordered flag-plan
+bad-flag-plan-remove-order flag-plan
+bad-flag-plan-no-flag-off flag-plan
+bad-flag-plan-unflagged flag-plan
+bad-flag-plan-flagged-mismatch flag-plan
 EOF
+
+# ---- rule flag-plan (feature-flags 02 §1.2) -----------------------------------
+check tests/fixtures/plans/good-flagged
+if [ "$RC" -eq 0 ] && [ "$(printf %s "$OUT" | grep -cvE '^checked [0-9]+ documents in [0-9]+ plan folder\(s\): clean$')" -eq 0 ] && printf %s "$OUT" | grep -qE '^checked 5 documents'; then ok "good-flagged (two flags, setup task, guarded tasks, open removals) passes"; else bad "good-flagged fixture (exit $RC)" "$OUT"; fi
+# AC-2: the repository's worked example is unflagged and still passes unchanged
+check "$REPO/examples/guard-report"
+[ "$RC" -eq 0 ] && printf %s "$OUT" | grep -qE '^checked [0-9]+ documents' && ok "examples/guard-report still passes" || bad "examples/guard-report (exit $RC)" "$OUT"
+# Each bad-flag-plan fixture fails for the condition it plants, not by accident.
+while IFS='|' read -r dir want; do
+  [ -z "$dir" ] && continue
+  check "tests/fixtures/plans/$dir"
+  printf '%s\n' "$OUT" | grep -F '[flag-plan]' | grep -qF -- "$want" && ok "$dir names its condition" || bad "$dir (wanted: $want)" "$OUT"
+done <<'EOF'
+bad-flag-plan-no-flag-task|the plan is flagged but no task carries
+bad-flag-plan-no-remove|flag `bulk.export_v2` needs exactly one remove task, has none
+bad-flag-plan-two-adds|flag `new-search` needs exactly one add task, has 2 (T-02, T-03)
+bad-flag-plan-no-owner|T-06 removes a flag without a `- flag_owner:` role
+bad-flag-plan-no-date|T-07 removes a flag without a `- remove_by:` date
+bad-flag-plan-bad-date|T-06 remove_by `2027-02-30` is not a real YYYY-MM-DD date
+bad-flag-plan-basic-date|T-06 remove_by `20270131` is not a real YYYY-MM-DD date
+bad-flag-plan-verb|T-03 flag verb `enable` is not `add` or `remove`
+bad-flag-plan-name|T-02 flag name `New Search` does not match
+bad-flag-plan-repeated-key|T-02 repeats `- flag:`
+bad-flag-plan-owner-subfield|T-07 carries `remove_by` as an `owner` sub-field
+bad-flag-plan-field-on-add|T-02 has `- flag_owner:` but is not a remove task
+bad-flag-plan-unordered|T-04 is unordered against T-02, which adds flag `new-search`
+bad-flag-plan-remove-order|T-06 removes flag `new-search` but does not depend on T-05
+bad-flag-plan-no-flag-off|T-05 is guarded by flag `bulk.export_v2`, `new-search` but has no `- flag off:` check
+bad-flag-plan-unflagged|T-02 carries flag bullets but the plan is not `flagged: true`
+bad-flag-plan-flagged-mismatch|flagged is `true` in 05 but `false` in 02
+EOF
+# the owner sub-field case names both keys
+check tests/fixtures/plans/bad-flag-plan-owner-subfield
+printf '%s\n' "$OUT" | grep -qF 'carries `flag_owner` as an `owner` sub-field' && ok "owner sub-field flag_owner is caught too" || bad "owner sub-field flag_owner" "$OUT"
+# remove-order plants one ordering defect, and reports only it
+check tests/fixtures/plans/bad-flag-plan-remove-order
+[ "$(printf '%s\n' "$OUT" | grep -c '\[flag-plan\]')" -eq 1 ] && ok "remove-order reports exactly its one missing dependency" || bad "remove-order line count" "$OUT"
+
+BASE=good-flagged
+mutate m 05-implementation.md "flagged: true" "flagged: yes"
+expect_only "flagged not true or false" flag-plan tests/fixtures/plans/m
+printf '%s' "$OUT" | grep -qF 'flagged is `yes`, expected `true` or `false`' && ok "flagged value message names the value" || bad "flagged value message" "$OUT"
+mutate m 05-implementation.md "flagged: true" "flagged:"
+expect_only "flagged with an empty value" flag-plan tests/fixtures/plans/m
+mutate m 05-implementation.md "flagged: true
+" ""
+check tests/fixtures/plans/m
+[ "$RC" -eq 0 ] && ok "05 without flagged inherits flagged: true from 02" || bad "05 inherits flagged from 02 (exit $RC)" "$OUT"
+mutate m 02-design.md "flagged: true
+" ""
+check tests/fixtures/plans/m
+[ "$RC" -eq 0 ] && ok "a flagged 05 with no flagged key in 02 passes" || bad "flagged 05 alone (exit $RC)" "$OUT"
+mutate m 05-implementation.md "reads: 01-requirements.md, 02-design.md, 03-research.md, 04-review.md" "reads: 01-requirements.md"
+rm "$P/m/02-design.md" "$P/m/03-research.md" "$P/m/04-review.md"
+check tests/fixtures/plans/m
+[ "$RC" -eq 0 ] && ok "a flagged plan with no 02 (tier S shape) passes" || bad "flagged plan without 02 (exit $RC)" "$OUT"
+mutate m 05-implementation.md "- flag on: the new search endpoint returns results" "- flag on:"
+expect_only "empty flag on" flag-plan tests/fixtures/plans/m
+printf '%s' "$OUT" | grep -qF 'T-04 is guarded by flag `bulk.export_v2`, `new-search` but has no `- flag on:` check' && ok "a task guarded by two flags is reported once, naming both" || bad "two-flag guarded message" "$OUT"
+mutate m 05-implementation.md "- flag off: the old search answers and the new endpoint returns 404" "- flag off: the old search answers
+- flag off: never mind"
+expect_only "repeated flag off" flag-plan tests/fixtures/plans/m
+mutate m 05-implementation.md "- flag: remove bulk.export_v2" "- flag: remove new-search"
+expect_only "two remove tasks for one flag" flag-plan tests/fixtures/plans/m
+printf '%s' "$OUT" | grep -qF 'flag `new-search` needs exactly one remove task, has 2 (T-06, T-07)' && ok "two remove tasks are named" || bad "two remove tasks message" "$OUT"
+mutate m 05-implementation.md "### T-05 [ ] Export behind bulk.export_v2
+- depends: T-04" "### T-05 [ ] Export behind bulk.export_v2
+- depends: T-04
+- remove_by: 2027-01-01"
+expect_only "remove_by on a guarded task" flag-plan tests/fixtures/plans/m
+mutate m 05-implementation.md "- remove_by: 2027-01-31" "- remove_by:"
+expect_only "empty remove_by" flag-plan tests/fixtures/plans/m
+mutate m 05-implementation.md "- flag: add new-search" "- flag: add"
+expect_only "flag add with no name" flag-plan tests/fixtures/plans/m
+mutate m 05-implementation.md "- depends: T-01, T-02, T-03, T-04, T-05" "- depends: T-01, T-02, T-03, T-04, T-05, T-06"
+expect_rule "a remove task depending on itself is a cycle" depends-cycle tests/fixtures/plans/m
+printf '%s' "$OUT" | grep -q Traceback && bad "flag-plan crashed on a cycle" "$OUT" || ok "flag-plan survives a depends cycle"
+mutate m 05-implementation.md "### T-05 [ ] Export behind" "### T-04 [ ] Export behind"
+expect_rule "a duplicated task ID in a flagged plan" duplicate-id tests/fixtures/plans/m
+printf '%s' "$OUT" | grep -q Traceback && bad "flag-plan crashed on a duplicate task ID" "$OUT" || ok "flag-plan survives a duplicate task ID"
+# an invalid verb and name holding ESC and U+202E print with ? on one line each
+mutate m 05-implementation.md "- flag: add bulk.export_v2" "$(printf -- '- flag: en\033[2Jable\342\200\256 bulk.export_v2')"
+mutate m2 05-implementation.md "- flag: add new-search" "$(printf -- '- flag: add new\033]0;x\007\342\200\256search')"
+BASE=good
+check tests/fixtures/plans/m
+OUT1="$OUT"; check tests/fixtures/plans/m2
+SAN1="$OUT1" SAN2="$OUT" python3 -c '
+import os, sys
+a, b = os.environ["SAN1"], os.environ["SAN2"]
+ok = ("flag verb `en?[2Jable?` is not" in a and "flag name `new?]0;x??search` does not match" in b
+      and all(l.startswith("tests/fixtures/plans/m") for l in (a + "\n" + b).split("\n"))
+      and not any(c in a + b for c in "\x1b‮\x07"))
+sys.exit(0 if ok else 1)' && ok "flag verb and name with ESC and U+202E print ? on one line" || bad "flag sanitiser" "$OUT1
+$OUT"
+# AC-2 in an unflagged plan: a flag key hidden in an owner line is still caught
+mutate m 05-implementation.md "worktree: main" "worktree: main · remove_by: 2027-01-01"
+expect_only "flag key hidden in an owner line of an unflagged plan" flag-plan tests/fixtures/plans/m
+printf '%s' "$OUT" | grep -qF 'T-03 carries `remove_by` as an `owner` sub-field' && ok "owner sub-field in an unflagged plan is named" || bad "owner sub-field unflagged" "$OUT"
+rm -rf "${P:?}/m" "${P:?}/m2"
 
 # the deny-listed term must never be echoed (the deny-list is confidential)
 check tests/fixtures/plans/bad-deny-list

@@ -60,12 +60,13 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 - timeout: 10m
 - evidence: run-verify · exit 0 · tests 92 · 9.8s · log evidence/T-01.log sha256:86ba249110a6e6de97208d410be7a7086d9a8992c515dec67a9390e85736776b · 2026-10-17
 
-### T-02 [ ] Rule `flag-plan` and its fixtures
+### T-02 [x] Rule `flag-plan` and its fixtures
 - depends: T-01
 - files: plugins/delivery/scripts/check-plan.py, scripts/test-check-plan.sh, tests/fixtures/plans/good-flagged/, tests/fixtures/plans/bad-flag-plan-*
 - acceptance: `check-plan.py` implements 02 §1.2 conditions 1 to 6 under the single rule name `flag-plan`, reading flag keys from raw task lines. `good-flagged/` passes. It has two flags, a setup task before both add tasks, guarded tasks with `flag on` / `flag off`, and remove tasks still `[ ]`. Each `bad-flag-plan-*` fixture listed in 02 §10 fails and names only `flag-plan`. Every existing fixture and `examples/guard-report` still pass unchanged (AC-1, AC-2)
 - verify: `bash scripts/test-check-plan.sh`
 - timeout: 15m
+- evidence: run-verify · exit 0 · tests 151 · 14.3s · log evidence/T-02.log sha256:a804fc18f169f9fb1ea09d3e9b04100df1f650af30f5919c3f2992d2cd460dc7 · 2026-10-17
 
 ### T-03 [ ] `--flags` report mode and the coverage gate
 - depends: T-02

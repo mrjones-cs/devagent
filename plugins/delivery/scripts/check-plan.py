@@ -8,7 +8,8 @@
                                          folder fails
 
 The grammar and the rule list are normative in docs/plans/delivery/02-design.md
-section 5 (sections 5.1 to 5.6). One extension comes from 05-implementation.md:
+section 5 (sections 5.1 to 5.6), plus rule `flag-plan` from
+docs/plans/feature-flags/02-design.md section 1.2. One extension comes from 05-implementation.md:
 tasks named in its front-matter `manual_evidence: [...]` may carry evidence that
 begins `manual` (written by hand before run-verify existed).
 
@@ -36,6 +37,7 @@ import subprocess
 import sys
 import unicodedata
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -80,6 +82,10 @@ IN_PROGRESS_FIELDS = ("owner", "session", "started", "worktree")
 DENY_LIST = Path(".delivery") / "deny-list"
 UNSAFE_CATEGORIES = frozenset({"Cc", "Cf", "Zl", "Zp"})
 MESSAGE_LIMIT = 300  # code points
+# Feature flags (feature-flags 02 §1.1, §1.2): keys read from raw task lines.
+FLAG_KEYS = ("flag", "flag_owner", "remove_by", "flag on", "flag off")
+FLAG_VERBS = ("add", "remove")
+FLAG_NAME = re.compile(r"^[a-z0-9][a-z0-9._-]{0,62}$")
 
 ANY_ID = re.compile(r"\b([AXRCTD])-(\d+)\b")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -317,6 +323,7 @@ class Checker:
         self.failures: list[Failure] = []
         self.root = find_root(folder.resolve())
         self.docs = [load(p) for p in sorted(folder.glob("0[1-5]-*.md"))]
+        self.graphs: dict[Path, dict[str, list[str]]] = {}
 
     def fail(self, rule: str, path: Path, line: int, message: str) -> None:
         self.failures.append(Failure(rule, path, line, message))
@@ -337,6 +344,7 @@ class Checker:
         self.research()
         self.review()
         self.tasks()
+        self.flag_plan()
         return self.failures
 
     # -- grammar ------------------------------------------------------------
@@ -618,6 +626,7 @@ class Checker:
                         self.fail("in-progress-owner", doc.path, n, f"{tid} is [~] without {', '.join(missing)}")
                 elif state == "!" and not found.get("reason", (0, ""))[1]:
                     self.fail("blocked-reason", doc.path, n, f"{tid} is [!] without a `- reason:`")
+            self.graphs[doc.path] = graph
             for tid, deps in graph.items():
                 for dep in deps:
                     if dep not in graph:
@@ -701,6 +710,171 @@ class Checker:
         count = sum(1 for s in log.stdout.splitlines() if re.match(rf"^{re.escape(tid)}(?!\d)\b", s))
         if count != 1:
             self.fail("commit", doc.path, n, f"{tid} is [x] with {count} `{tid}` commits touching its files or its evidence log, expected 1")
+
+    # -- feature flags (feature-flags 02 §1.2) -----------------------------
+
+    def flagged_value(self, doc: Doc) -> bool | None:
+        """The doc's `flagged` front-matter value: True, False, or None when absent."""
+        fm = doc.fm or {}
+        if "flagged" not in fm:
+            return None
+        value = fm["flagged"]
+        if value in ("true", "false"):
+            return value == "true"
+        self.fail("flag-plan", doc.path, doc.fm_line["flagged"],
+                  f"flagged is `{value if isinstance(value, str) else '[]'}`, expected `true` or `false`")
+        return None
+
+    def flag_plan(self) -> None:
+        design = [v for v in map(self.flagged_value, self.by_step("02-design")) if v is not None]
+        for doc in self.by_step("05-implementation"):
+            own = self.flagged_value(doc)
+            # Condition 6: 02 and 05 disagreeing on `flagged`.
+            if own is not None and design and design[0] != own:
+                self.fail("flag-plan", doc.path, doc.fm_line["flagged"],
+                          f"flagged is `{str(own).lower()}` in 05 but `{str(design[0]).lower()}` in 02")
+            flagged = own if own is not None else bool(design and design[0])
+            self.flag_tasks(doc, flagged)
+
+    def flag_tasks(self, doc: Doc, flagged: bool) -> None:
+        p = doc.path
+        heads: dict[str, int] = {}
+        keys: dict[str, dict[str, tuple[int, str]]] = {}
+        for n, m, block in sections(doc, TASK_HEAD):
+            tid = m.group(1)
+            if tid in heads:
+                continue  # duplicate-id already names it
+            heads[tid] = n
+            keys[tid] = found = {}
+            # Condition 1: a raw-line scan, because bullets() keeps only the first
+            # occurrence of a key and folds `owner` sub-fields into the same map.
+            for line, text in block:
+                b = BULLET.match(text)
+                if not b:
+                    continue
+                key, value = b.group(1), b.group(2).strip()
+                if key == "owner":
+                    for part in value.split(" · ")[1:]:
+                        sub = re.match(r"^([a-z][a-z _]*):", part.strip())
+                        if sub and sub.group(1) in FLAG_KEYS:
+                            self.fail("flag-plan", p, line,
+                                      f"{tid} carries `{sub.group(1)}` as an `owner` sub-field; "
+                                      f"write it as its own `- {sub.group(1)}:` bullet")
+                    continue
+                if key not in FLAG_KEYS:
+                    continue
+                if key in found:
+                    self.fail("flag-plan", p, line,
+                              f"{tid} repeats `- {key}:` (first at line {found[key][0]})")
+                    continue
+                found[key] = (line, value)
+        carriers = [tid for tid, found in keys.items() if found]
+        if not flagged:
+            # Condition 6: a flag bullet in an unflagged plan.
+            for tid in carriers:
+                first = min(line for line, _ in keys[tid].values())
+                self.fail("flag-plan", p, first,
+                          f"{tid} carries flag bullets but the plan is not `flagged: true`")
+            return
+
+        adds: dict[str, list[str]] = {}
+        removes: dict[str, list[str]] = {}
+        verbs: dict[str, tuple[str, str]] = {}  # tid -> (verb, name) for valid flag bullets
+        for tid, found in keys.items():
+            if "flag" not in found:
+                continue
+            line, value = found["flag"]
+            verb, _, name = value.partition(" ")
+            name = name.strip()
+            if verb not in FLAG_VERBS:
+                self.fail("flag-plan", p, line, f"{tid} flag verb `{verb}` is not `add` or `remove`")
+            elif not FLAG_NAME.match(name):
+                self.fail("flag-plan", p, line,
+                          f"{tid} flag name `{name}` does not match {FLAG_NAME.pattern}")
+            else:
+                verbs[tid] = (verb, name)
+                (adds if verb == "add" else removes).setdefault(name, []).append(tid)
+
+        # Condition 2: pairing.
+        if not any("flag" in found for found in keys.values()):
+            self.fail("flag-plan", p, doc.fm_line.get("flagged", 1),
+                      "the plan is flagged but no task carries `- flag: add|remove <name>`")
+        for name in sorted(set(adds) | set(removes)):
+            for kind, pool in (("add", adds), ("remove", removes)):
+                tids = pool.get(name, [])
+                if len(tids) != 1:
+                    where = heads[tids[1]] if tids else heads[(adds.get(name) or removes[name])[0]]
+                    have = f"{len(tids)} ({', '.join(tids)})" if tids else "none"
+                    self.fail("flag-plan", p, where, f"flag `{name}` needs exactly one {kind} task, has {have}")
+        for tid, found in keys.items():
+            is_remove = verbs.get(tid, ("", ""))[0] == "remove"
+            for key in ("flag_owner", "remove_by"):
+                if key in found and not is_remove:
+                    self.fail("flag-plan", p, found[key][0], f"{tid} has `- {key}:` but is not a remove task")
+            if not is_remove:
+                continue
+            # Condition 3: remove task fields.
+            if not found.get("flag_owner", (0, ""))[1]:
+                self.fail("flag-plan", p, heads[tid], f"{tid} removes a flag without a `- flag_owner:` role")
+            if "remove_by" not in found:
+                self.fail("flag-plan", p, heads[tid], f"{tid} removes a flag without a `- remove_by:` date")
+            elif not valid_date(found["remove_by"][1]):
+                self.fail("flag-plan", p, found["remove_by"][0],
+                          f"{tid} remove_by `{found['remove_by'][1]}` is not a real YYYY-MM-DD date")
+
+        # Conditions 4 and 5: ordering and guarded tasks, per well-paired flag.
+        graph = self.graphs.get(p, {})
+        ancestors = {tid: reachable(graph, tid) for tid in heads}
+        in_a = {t for tids in adds.values() for t in tids}
+        in_r = {t for tids in removes.values() for t in tids}
+        guarded: dict[str, list[str]] = {}
+        for name in sorted(set(adds) & set(removes)):
+            if len(adds[name]) != 1 or len(removes[name]) != 1:
+                continue
+            a_f, r_f = adds[name][0], removes[name][0]
+            for tid in heads:
+                if tid in in_a or tid in in_r:
+                    continue
+                if tid not in ancestors[a_f] and a_f not in ancestors[tid]:
+                    self.fail("flag-plan", p, heads[tid],
+                              f"{tid} is unordered against {a_f}, which adds flag `{name}`: "
+                              f"make it a prerequisite of {a_f} or depend on it")
+            for tid in heads:
+                if tid not in in_r and tid not in ancestors[r_f]:
+                    self.fail("flag-plan", p, heads[r_f],
+                              f"{r_f} removes flag `{name}` but does not depend on {tid}")
+            for tid in heads:
+                if tid not in in_r and a_f in ancestors[tid]:
+                    guarded.setdefault(tid, []).append(name)
+        for tid, names in guarded.items():
+            for key in ("flag on", "flag off"):
+                if not keys[tid].get(key, (0, ""))[1]:
+                    self.fail("flag-plan", p, heads[tid],
+                              f"{tid} is guarded by flag {', '.join(f'`{n}`' for n in names)} "
+                              f"but has no `- {key}:` check")
+
+
+def valid_date(value: str) -> bool:
+    """`YYYY-MM-DD` that is a real calendar date (fromisoformat alone also takes 20270131)."""
+    if not DATE.match(value):
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
+def reachable(graph: dict[str, list[str]], start: str) -> set[str]:
+    """Every task `start` depends on, transitively (cycle-safe)."""
+    seen: set[str] = set()
+    stack = list(graph.get(start, []))
+    while stack:
+        node = stack.pop()
+        if node not in seen:
+            seen.add(node)
+            stack.extend(graph.get(node, []))
+    return seen
 
 
 def on_allowlist(url: str) -> bool:
