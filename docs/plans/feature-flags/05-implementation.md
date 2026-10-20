@@ -101,14 +101,15 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 
 ### T-05 [x] `feature-flags` skill, resident stub and skill counts
 - depends: none
-- files: plugins/devagent-standards/skills/feature-flags/SKILL.md, plugins/devagent-standards/skills/engagement-closeout/SKILL.md, templates/CLAUDE.md, README.md, docs/DESIGN.md, .claude-plugin/marketplace.json, plugins/devagent-standards/.claude-plugin/plugin.json
+- files: plugins/devagent-standards/skills/feature-flags/SKILL.md, plugins/devagent-standards/skills/engagement-closeout/SKILL.md, templates/CLAUDE.md, README.md, docs/DESIGN.md, .claude-plugin/marketplace.json, plugins/devagent-standards/.claude-plugin/plugin.json, install.sh, scripts/test-check-skills.sh
 - acceptance:
   - `skills/feature-flags/SKILL.md` has front matter `name` and `description`, the description naming when to invoke it. It covers every 02 §1.7 section, each as a rule with its reason: server-side and session-scoped evaluation, client-side exposure, flagged-off code in public bundles, who may flip a flag with MFA and audit, security controls never flag-gated, a model kill switch that fails off, fail-safe defaults, gradual rollout, and hosted services as vendors.
   - `templates/CLAUDE.md` gains a stub under DETAILED STANDARDS in the existing format.
   - `engagement-closeout` gains the live-flags handover line.
   - The skill count reads 14 / fourteen in every file 02 §10 lists, and the manifest skill lists name feature flags.
   - The resident line, word and token figures are updated wherever `check-skills.py` reads them.
-  - `check-skills.py` is clean, and `bash scripts/test-check-skills.sh` still passes (AC-5).
+  - `install.sh` reads 14 skills, and the stale-figure tests in `scripts/test-check-skills.sh` plant their stale values against the new wording (14, fourteen, the new resident line count), so every one of its rules still fires.
+  - `check-skills.py` is clean, and `bash scripts/test-check-skills.sh` still passes with every rule firing (AC-5). Re-planned 2026-10-18 after attempt 1: the operator approved `templates/CLAUDE.md` and added `install.sh` and `scripts/test-check-skills.sh`.
 - verify: `python3 scripts/check-skills.py`
 - timeout: 20m
 - evidence: run-verify · exit 0 · tests 14 · 0.1s · log evidence/T-05.log sha256:9efe9147f1fd9cb8cf255380d359c04763f14e7e1afee48926d042239e1397aa · 2026-10-18
@@ -134,13 +135,20 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 
 ### T-07 [x] DESIGN grammar and CHANGELOG
 - depends: T-06
-- files: docs/DESIGN.md, CHANGELOG.md
+- files: docs/DESIGN.md, CHANGELOG.md, docs/CUSTOMIZING.md, README.md
 - acceptance:
   - DESIGN §5.1 lists the optional `flagged` key for 02 and 05.
   - §5.5 shows the flag bullets.
   - §5.6 lists `flag-plan`, `--flags` and output sanitising.
   - §4.4 describes the build hold.
   - CHANGELOG's Unreleased section describes the feature, `--remove-flags`, `check-all.sh` and the sanitised output.
+  - `docs/CUSTOMIZING.md` gains a user-facing "Feature flags" section, linked from README:
+    - DevAgent ships no flag runtime and integrates with no vendor; the user's own flag system (a vendor SDK, a parameter store or a config file) stays in charge;
+    - the design names that system and the flag in 02 (`flagged: true`), and the `feature-flags` skill sets the rules for using it;
+    - the add task wires the flag in, off by default; guarded tasks carry `flag on` / `flag off`; the remove task deletes the flag and its code;
+    - a worked example of an add and remove task pair in the 05 grammar;
+    - `check-plan.py --flags`, `/delivery:build <feature> --remove-flags`, and what the handover lists.
+    Added 2026-10-18 by the operator.
   - `check-skills.py` is clean
 - verify: `python3 scripts/check-skills.py`
 - timeout: 10m
@@ -151,7 +159,7 @@ itself is unflagged: flags in DevAgent's own code are out of scope (01).
 - files: scripts/check-all.sh, README.md
 - acceptance:
   - `scripts/check-all.sh` runs, in sequence: `python3 scripts/check-skills.py`, `python3 plugins/delivery/scripts/check-plan.py examples/guard-report`, and every `scripts/test-*.sh` except `test-delivery-smoke.sh`.
-  - It prints one line per suite with its exit code and seconds, then a total.
+  - It prints one line per suite with its exit code and seconds, then a total line that reads exactly `total: <n> passed, <m> failed, <s>s`, where `<n>` and `<m>` count suites. `run-verify` reads `<n> passed` as the test count, so a passing run records evidence. Re-planned 2026-10-18 after attempt 1, which passed every suite but printed no count `run-verify` reads.
   - It exits non-zero if any suite fails, and exits 2 on any argument.
   - README's check-command list gains it, with its measured run time.
   - The run passes with every suite green (AC-6). CI confirms it again on the first push of the integrated branch, which build does not do
