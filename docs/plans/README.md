@@ -20,7 +20,7 @@ This folder holds the written plan for each feature, prepared by the DevAgent co
 
 ## What to look for
 - The "Open decisions" list in the design: items that need an answer from you.
-- The risk register ({{risk_register_location}}): open and accepted risks, each with a named owner.
+- The risk register (the threat model section of each `02-design.md`): open and accepted risks, each with a named owner.
 
 ## Questions
-Contact {{contact_name}} at {{contact_channel}}.
+Contact the DevAgent maintainers through the repository's GitHub issues. Report security issues privately, as `SECURITY.md` describes.
