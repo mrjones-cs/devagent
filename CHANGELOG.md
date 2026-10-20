@@ -3,7 +3,11 @@
 All notable changes are listed here. Versions follow
 [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 1.1.0 - 2026-10-20
+
+Run `/plugin update` for both plugins, then `./install.sh` again (see "Updating"
+in the README). Existing plans need the two new `01-requirements.md` sections
+described below.
 
 **Feature flags in the delivery workflow.** A feature can now be planned to
 ship behind a flag, with the flag's removal planned from the start. DevAgent
